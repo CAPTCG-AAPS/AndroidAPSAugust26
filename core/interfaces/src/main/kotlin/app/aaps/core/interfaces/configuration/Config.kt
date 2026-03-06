@@ -33,6 +33,7 @@ enum class ExternalOptions(val filename: String) {
     EMULATE_DANA_R("emulate_dana_r"),
     EMULATE_DANA_R_KOREAN("emulate_dana_r_korean"),
     EMULATE_DANA_R_V2("emulate_dana_r_v2"),
+    OMNIPOD_DRIFT_COMPENSATION("omnipod_drift_compensation"),
 }
 
 @Suppress("PropertyName")
@@ -74,4 +75,6 @@ interface Config {
     fun isEngineeringModeOrRelease(): Boolean
     fun isEngineeringMode(): Boolean
     fun isEnabled(option: ExternalOptions): Boolean
+    fun enableOmnipodDriftCompensation(): Boolean
 }
+

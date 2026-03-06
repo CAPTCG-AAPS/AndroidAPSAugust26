@@ -66,6 +66,7 @@ class ConfigImpl @Inject constructor(
     }
 
     private val enabledOptionsCache = mutableMapOf<ExternalOptions, Boolean>()
+    private val enabledOptionsCache = mutableMapOf<ExternalOptions, Boolean>()
 
     override fun isEngineeringModeOrRelease(): Boolean = if (!APS) true else isEngineeringMode() || !isDev()
     override fun isEngineeringMode(): Boolean = isEnabled(ExternalOptions.ENGINEERING_MODE)
@@ -74,4 +75,5 @@ class ConfigImpl @Inject constructor(
         enabledOptionsCache.getOrPut(option) {
             fileListProvider.get().ensureExtraDirExists()?.findFile(option.filename) != null
         }
+    override fun enableOmnipodDriftCompensation(): Boolean = isEnabled(ExternalOptions.OMNIPOD_DRIFT_COMPENSATION)
 }
