@@ -4,6 +4,7 @@ import androidx.collection.LongSparseArray
 import androidx.collection.size
 import app.aaps.core.data.iob.InMemoryGlucoseValue
 import app.aaps.core.data.model.GV
+import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.aps.AutosensData
 import app.aaps.core.interfaces.aps.AutosensDataStore
@@ -159,6 +160,14 @@ class AutosensDataStoreObject : AutosensDataStore {
             referenceTime = someTime
             return someTime
         }
+        // If the gap between someTime and referenceTime is larger than 7 minutes
+        // (e.g. after an Eversense charging break), reset referenceTime so the
+        // normalization adjustment stays within bounds and doesn't trigger the fallback.
+        val gapFromReference = abs(someTime - referenceTime)
+        if (gapFromReference > T.mins(7).msecs()) {
+            referenceTime = someTime
+            return someTime
+        }
         var diff = abs(someTime - referenceTime)
         diff %= T.mins(5).msecs()
         return if (diff > T.mins(2).plus(T.secs(30)).msecs()) someTime + abs(diff - T.mins(5).msecs()) // Adjust to the future
@@ -178,7 +187,18 @@ class AutosensDataStoreObject : AutosensDataStore {
                 if (diff > T.mins(2).plus(T.secs(30)).msecs()) diff -= T.mins(5).msecs()
                 totalDiff += diff
                 diff = abs(diff)
-                if (diff > T.secs(IRREGULAR_DATA_SEC).msecs()) {
+                // Eversense E3 and E365 deliver readings with up to +-60s jitter on 5-min intervals.
+                // Use a relaxed threshold for Eversense pairs; all other sensors use +-30s (IRREGULAR_DATA_SEC).
+                val isEversense = bgReadings[i].sourceSensor == SourceSensor.EVERSENSE
+                    || bgReadings[i].sourceSensor == SourceSensor.EVERSENSE_E3
+                    || bgReadings[i].sourceSensor == SourceSensor.EVERSENSE_365
+                    || bgReadings[i - 1].sourceSensor == SourceSensor.EVERSENSE
+                    || bgReadings[i - 1].sourceSensor == SourceSensor.EVERSENSE_E3
+                    || bgReadings[i - 1].sourceSensor == SourceSensor.EVERSENSE_365
+                // Skip charging/BT gap (>7 min) for Eversense
+                if (isEversense && (lastBgTime - bgTime) > T.mins(7).msecs()) continue
+                val jitterThresholdSecs = if (isEversense) 60L else IRREGULAR_DATA_SEC
+                if (diff > T.secs(jitterThresholdSecs).msecs()) {
                     aapsLogger.debug(LTag.AUTOSENS, "Interval detection: values: ${bgReadings.size} diff: ${diff / 1000}[s] is5minData: false")
                     return false
                 }
