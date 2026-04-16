@@ -59,6 +59,8 @@
     <string name="eversense_calibration_action">Calibrate transmitter</string>
     <string name="eversense_calibration_too_soon">Too soon — calibration already done in the past 2 hours</string>
     <string name="eversense_use_smoothing">Use ESEL Smoothing</string>
+    <string name="eversense_cloud_upload_enabled">Enable Eversense cloud upload</string>
+    <string name="eversense_cloud_upload_toast">Show cloud upload result</string>
     <!-- Credentials section for Eversense 365 DMS login -->
     <string name="eversense_not_connected">Not connected</string>
     <string name="eversense_credentials_title">Eversense 365 credentials</string>
@@ -109,3 +111,4 @@
     <string name="eversense_transmitter_not_placed_summary">Make sure the transmitter is placed directly over the sensor site and secured with the adhesive patch.</string>
     <string name="eversense_reconnecting">Reconnecting…</string>
 </resources>
+
