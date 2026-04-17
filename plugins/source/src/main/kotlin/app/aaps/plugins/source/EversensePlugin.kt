@@ -72,7 +72,6 @@ class EversensePlugin @Inject constructor(
                 title = rh.gs(R.string.source_eversense)
             )
         }
-        .pluginIcon(app.aaps.core.objects.R.drawable.ic_blooddrop_48)
         .pluginName(R.string.source_eversense)
         .preferencesVisibleInSimpleMode(false)
         .description(R.string.description_source_eversense),
@@ -461,6 +460,7 @@ class EversensePlugin @Inject constructor(
         private val eversense get() = EversenseCGMPlugin.instance
     }
 }
+
 
 
 
