@@ -47,6 +47,12 @@ import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import app.aaps.core.keys.interfaces.withActivity
+import app.aaps.plugins.source.activities.EversenseStatusActivity
+import app.aaps.plugins.source.activities.EversenseCalibrationActivity
+import app.aaps.plugins.source.activities.EversensePlacementActivity
+import app.aaps.plugins.source.keys.EversenseIntentKey
+import app.aaps.plugins.source.keys.EversenseStringKey
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
 import javax.inject.Inject
@@ -160,9 +166,20 @@ class EversensePlugin @Inject constructor(
         key = "eversense_settings",
         titleResId = R.string.source_eversense,
         items = listOf(
+            EversenseIntentKey.EversenseStatus.withActivity(EversenseStatusActivity::class.java),
             BooleanKey.EversenseUseSmoothing,
             BooleanKey.EversenseCloudUploadEnabled,
-            BooleanKey.EversenseCloudUploadToast
+            BooleanKey.EversenseCloudUploadToast,
+            PreferenceSubScreenDef(
+                key = "eversense_credentials_screen",
+                titleResId = R.string.eversense_credentials_title,
+                items = listOf(
+                    EversenseStringKey.EversenseUsername,
+                    EversenseStringKey.EversensePassword
+                )
+            ),
+            EversenseIntentKey.EversenseCalibration.withActivity(EversenseCalibrationActivity::class.java as Class<*>),
+            EversenseIntentKey.EversensePlacement.withActivity(EversensePlacementActivity::class.java as Class<*>)
         ),
         icon = pluginDescription.icon
     )
@@ -444,6 +461,10 @@ class EversensePlugin @Inject constructor(
         private val eversense get() = EversenseCGMPlugin.instance
     }
 }
+
+
+
+
 
 
 

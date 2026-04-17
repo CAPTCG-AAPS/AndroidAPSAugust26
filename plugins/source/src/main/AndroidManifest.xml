@@ -26,6 +26,8 @@
             android:exported="false" />
         <activity android:name=".activities.EversensePlacementActivity"
             android:exported="false" />
+        <activity android:name=".activities.EversenseStatusActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

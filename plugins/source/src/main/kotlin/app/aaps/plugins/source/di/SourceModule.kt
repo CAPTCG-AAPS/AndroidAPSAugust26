@@ -15,6 +15,7 @@ import app.aaps.plugins.source.TomatoPlugin
 import app.aaps.plugins.source.XdripSourcePlugin
 import app.aaps.plugins.source.activities.RequestDexcomPermissionActivity
 import app.aaps.plugins.source.EversensePlugin
+import app.aaps.plugins.source.activities.EversenseStatusActivity
 import app.aaps.plugins.source.activities.EversenseCalibrationActivity
 import app.aaps.plugins.source.activities.EversensePlacementActivity
 import app.aaps.plugins.source.activities.RequestEversensePermissionActivity
@@ -48,6 +49,7 @@ abstract class SourceModule {
     @ContributesAndroidInjector abstract fun contributesEversensePlugin(): EversensePlugin
     @ContributesAndroidInjector abstract fun contributesRequestEversensePermissionActivity(): RequestEversensePermissionActivity
     @ContributesAndroidInjector abstract fun contributesEversenseCalibrationActivity(): EversenseCalibrationActivity
+    @ContributesAndroidInjector abstract fun contributesEversenseStatusActivity(): EversenseStatusActivity
     @ContributesAndroidInjector abstract fun contributesEversensePlacementActivity(): EversensePlacementActivity
     @ContributesAndroidInjector abstract fun contributesNotificationCollectorService(): NotificationCollectorService
 
