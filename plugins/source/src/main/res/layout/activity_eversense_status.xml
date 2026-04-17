@@ -38,6 +38,30 @@
             android:padding="8dp"
             android:textSize="16sp" />
 
+        <TextView android:id="@+id/eversense_status_phase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:textSize="16sp" />
+
+        <TextView android:id="@+id/eversense_status_readiness"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:textSize="16sp" />
+
+        <TextView android:id="@+id/eversense_status_last_cal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:textSize="16sp" />
+
+        <TextView android:id="@+id/eversense_status_next_cal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:textSize="16sp" />
+
         <TextView android:id="@+id/eversense_status_signal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -58,3 +82,4 @@
 
     </LinearLayout>
 </ScrollView>
+

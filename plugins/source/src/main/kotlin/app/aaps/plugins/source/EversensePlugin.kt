@@ -48,11 +48,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import app.aaps.core.keys.interfaces.withActivity
+import app.aaps.core.keys.interfaces.withClick
 import app.aaps.plugins.source.activities.EversenseStatusActivity
 import app.aaps.plugins.source.activities.EversenseCalibrationActivity
 import app.aaps.plugins.source.activities.EversensePlacementActivity
 import app.aaps.plugins.source.keys.EversenseIntentKey
 import app.aaps.plugins.source.keys.EversenseStringKey
+import app.aaps.core.ui.compose.icons.IcPluginEversense
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
 import javax.inject.Inject
@@ -72,6 +74,7 @@ class EversensePlugin @Inject constructor(
                 title = rh.gs(R.string.source_eversense)
             )
         }
+        .icon(IcPluginEversense)
         .pluginName(R.string.source_eversense)
         .preferencesVisibleInSimpleMode(false)
         .description(R.string.description_source_eversense),
@@ -168,7 +171,6 @@ class EversensePlugin @Inject constructor(
             EversenseIntentKey.EversenseStatus.withActivity(EversenseStatusActivity::class.java),
             BooleanKey.EversenseUseSmoothing,
             BooleanKey.EversenseCloudUploadEnabled,
-            BooleanKey.EversenseCloudUploadToast,
             PreferenceSubScreenDef(
                 key = "eversense_credentials_screen",
                 titleResId = R.string.eversense_credentials_title,
@@ -177,6 +179,14 @@ class EversensePlugin @Inject constructor(
                     EversenseStringKey.EversensePassword
                 )
             ),
+            EversenseIntentKey.EversenseSignOut.withClick {
+                val cleared = getSecureState().also {
+                    it.username = ""
+                    it.password = ""
+                }
+                saveSecureState(cleared)
+                aapsLogger.info(LTag.BGSOURCE, "Eversense credentials cleared by user")
+            },
             EversenseIntentKey.EversenseCalibration.withActivity(EversenseCalibrationActivity::class.java as Class<*>),
             EversenseIntentKey.EversensePlacement.withActivity(EversensePlacementActivity::class.java as Class<*>)
         ),
@@ -460,6 +470,9 @@ class EversensePlugin @Inject constructor(
         private val eversense get() = EversenseCGMPlugin.instance
     }
 }
+
+
+
 
 
 

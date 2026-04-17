@@ -66,7 +66,6 @@ class ConfigImpl @Inject constructor(
     }
 
     private val enabledOptionsCache = mutableMapOf<ExternalOptions, Boolean>()
-    private val enabledOptionsCache = mutableMapOf<ExternalOptions, Boolean>()
 
     override fun isEngineeringModeOrRelease(): Boolean = if (!APS) true else isEngineeringMode() || !isDev()
     override fun isEngineeringMode(): Boolean = isEnabled(ExternalOptions.ENGINEERING_MODE)

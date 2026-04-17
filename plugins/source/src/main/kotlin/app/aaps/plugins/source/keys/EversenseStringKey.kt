@@ -31,7 +31,8 @@ enum class EversenseStringKey(
         defaultValue = "",
         titleResId = R.string.eversense_credentials_password,
         summaryResId = R.string.eversense_credentials_not_set,
-        isPassword = true
+        isPassword = false
     )
 }
+
 

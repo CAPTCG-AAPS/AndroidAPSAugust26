@@ -65,8 +65,17 @@ class EversenseStatusActivity : TranslatedDaggerAppCompatActivity() {
         findViewById<TextView>(R.id.eversense_status_last_sync).text =
             "Last sync: " + (state?.let { dateFormatter.format(Date(it.lastSync)) } ?: notConnected)
         findViewById<TextView>(R.id.eversense_status_signal).text =
-            "Signal: " + (state?.let { signalToLabel(it.sensorSignalStrength) } ?: notConnected)
+            "Placement signal: " + (state?.let { signalToLabel(it.sensorSignalStrength) } ?: notConnected)
 
+
+        findViewById<TextView>(R.id.eversense_status_phase).text =
+            "Calibration phase: " + (state?.calibrationPhase?.name ?: notConnected)
+        findViewById<TextView>(R.id.eversense_status_readiness).text =
+            "Calibration readiness: " + (state?.calibrationReadiness?.name ?: notConnected)
+        findViewById<TextView>(R.id.eversense_status_last_cal).text =
+            "Last calibration: " + (state?.let { if (it.lastCalibrationDate > 0) dateFormatter.format(Date(it.lastCalibrationDate)) else notConnected } ?: notConnected)
+        findViewById<TextView>(R.id.eversense_status_next_cal).text =
+            "Next calibration: " + (state?.let { if (it.nextCalibrationDate > 0) dateFormatter.format(Date(it.nextCalibrationDate)) else notConnected } ?: notConnected)
         findViewById<Button>(R.id.eversense_btn_connect).text =
             if (eversense.isConnected()) "Disconnect" else "Connect"
         findViewById<Button>(R.id.eversense_btn_sync).isEnabled = eversense.isConnected()
@@ -157,3 +166,5 @@ class EversenseStatusActivity : TranslatedDaggerAppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 }
+
+
