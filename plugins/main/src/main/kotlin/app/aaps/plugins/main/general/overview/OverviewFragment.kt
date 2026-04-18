@@ -776,6 +776,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener {
             val useBatteryLevel = (pump.model() == PumpType.OMNIPOD_EROS)
                 || (pump.model() != PumpType.ACCU_CHEK_COMBO && pump.model() != PumpType.OMNIPOD_DASH)
             pbLevel.visibility = useBatteryLevel.toVisibility()
+            sensorBatteryLayout.visibility = (activePlugin.activeBgSource.sensorBatteryLevel != -1).toVisibility()
         }
         statusLightHandler.updateStatusLights(
             binding.statusLightsLayout.cannulaAge,
