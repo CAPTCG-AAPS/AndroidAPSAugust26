@@ -58,3 +58,5 @@ interface HardLimits {
 
     enum class AgeType { CHILD, TEENAGE, ADULT, RESISTANT_ADULT, PREGNANT }
 }
+
+
