@@ -783,7 +783,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener {
             binding.statusLightsLayout.insulinAge,
             binding.statusLightsLayout.reservoirLevel,
             binding.statusLightsLayout.sensorAge,
-            null,
+            binding.statusLightsLayout.sensorBatteryLevel,
             binding.statusLightsLayout.pbAge,
             binding.statusLightsLayout.pbLevel
         )

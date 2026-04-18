@@ -90,6 +90,31 @@
 
     </LinearLayout>
 
+
+    <LinearLayout
+        android:id="@+id/sensor_battery_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:focusable="true"
+        android:gravity="center"
+        tools:ignore="UseCompoundDrawables">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:contentDescription="@string/sensor_label"
+            app:srcCompat="@drawable/ic_cp_age_sensor" />
+
+        <TextView
+            android:id="@+id/sensor_battery_level"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:lines="1"
+            android:paddingStart="2dp"
+            android:paddingEnd="0dp"
+            tools:text="85%" />
+
+    </LinearLayout>
     <LinearLayout
         android:id="@+id/battery_layout"
         android:layout_width="wrap_content"

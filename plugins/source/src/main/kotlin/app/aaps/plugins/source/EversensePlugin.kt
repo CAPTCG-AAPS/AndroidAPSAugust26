@@ -84,6 +84,8 @@ class EversensePlugin @Inject constructor(
 
     @Inject lateinit var persistenceLayer: PersistenceLayer
 
+    override var sensorBatteryLevel = -1
+
     private val mainHandler = Handler(Looper.getMainLooper())
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
@@ -225,6 +227,9 @@ class EversensePlugin @Inject constructor(
 
     override fun onStateChanged(state: EversenseState) {
         aapsLogger.info(LTag.BGSOURCE, "New state received: ${Json.encodeToString(state)}")
+
+        // Update sensor battery level for Overview status lights
+        sensorBatteryLevel = if (state.batteryPercentage > 0) state.batteryPercentage else -1
 
         // Sync SAGE color thresholds to match Eversense sensor lifetime and notification days
         if (state.insertionDate > 0) {
