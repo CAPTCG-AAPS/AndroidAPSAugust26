@@ -1,11 +1,13 @@
-package app.aaps.plugins.source.activities
+﻿package app.aaps.plugins.source.activities
 
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
-import app.aaps.core.ui.activities.TranslatedDaggerAppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
 
-class RequestEversensePermissionActivity : TranslatedDaggerAppCompatActivity() {
+@AndroidEntryPoint
+class RequestEversensePermissionActivity : AppCompatActivity() {
 
     private val requestCode = "EversenseBLE".map { it.code }.sum()
 

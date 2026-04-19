@@ -1,4 +1,4 @@
-package app.aaps.plugins.source.activities
+﻿package app.aaps.plugins.source.activities
 
 import android.content.Context
 import android.os.Bundle
@@ -9,7 +9,8 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
-import app.aaps.core.ui.activities.TranslatedDaggerAppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
 import app.aaps.plugins.source.R
 import com.nightscout.eversense.EversenseCGMPlugin
 import com.nightscout.eversense.callbacks.EversenseScanCallback
@@ -22,7 +23,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class EversenseStatusActivity : TranslatedDaggerAppCompatActivity() {
+@AndroidEntryPoint
+class EversenseStatusActivity : AppCompatActivity() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

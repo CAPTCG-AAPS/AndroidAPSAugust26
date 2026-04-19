@@ -1,4 +1,4 @@
-package app.aaps.plugins.source.activities
+﻿package app.aaps.plugins.source.activities
 
 import android.os.Bundle
 import android.os.Handler
@@ -11,7 +11,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.Toolbar
 import app.aaps.core.interfaces.profile.ProfileUtil
-import app.aaps.core.ui.activities.TranslatedDaggerAppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
 import app.aaps.plugins.source.R
 import com.nightscout.eversense.EversenseCGMPlugin
 import com.nightscout.eversense.callbacks.EversenseWatcher
@@ -23,7 +24,8 @@ import com.nightscout.eversense.models.EversenseState
 import com.nightscout.eversense.util.EversenseLogger
 import javax.inject.Inject
 
-class EversenseCalibrationActivity : TranslatedDaggerAppCompatActivity() {
+@AndroidEntryPoint
+class EversenseCalibrationActivity : AppCompatActivity() {
 
     @Inject lateinit var profileUtil: ProfileUtil
 
