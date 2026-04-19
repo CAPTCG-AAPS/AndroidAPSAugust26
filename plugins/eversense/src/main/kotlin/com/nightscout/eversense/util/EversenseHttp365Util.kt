@@ -3,6 +3,7 @@ package com.nightscout.eversense.util
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.nightscout.eversense.enums.EversenseTrendArrow
 import com.nightscout.eversense.models.EversenseCGMResult
 import com.nightscout.eversense.models.EversenseSecureState
 import kotlinx.serialization.Serializable
@@ -12,10 +13,13 @@ import java.io.ByteArrayOutputStream
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Base64
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 class EversenseHttp365Util {
     companion object {
@@ -30,6 +34,7 @@ class EversenseHttp365Util {
         // Overridable for unit tests
         internal var tokenBaseUrl = "https://usiamapi.eversensedms.com/"
         internal var uploadBaseUrl = "https://usmobileappmsprod.eversensedms.com/"
+        internal var careBaseUrl = "https://usapialpha.eversensedms.com/"
 
         fun login(preference: SharedPreferences): LoginResponseModel? {
             val state = getState(preference)
@@ -38,40 +43,43 @@ class EversenseHttp365Util {
                     "grant_type=password",
                     "client_id=$CLIENT_ID",
                     "client_secret=$CLIENT_SECRET",
-                    "username=${state.username}",
-                    "password=${state.password}"
+                    "username=${URLEncoder.encode(state.username, "UTF-8")}",
+                    "password=${URLEncoder.encode(state.password, "UTF-8")}"
                 ).joinToString("&")
 
                 val url = URL("${tokenBaseUrl}connect/token")
                 val conn = url.openConnection() as HttpURLConnection
                 conn.requestMethod = "POST"
                 conn.doOutput = true
+                conn.connectTimeout = 30_000
+                conn.readTimeout = 30_000
                 conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
 
-                val stream = conn.outputStream
-                val outputStreamWriter = OutputStreamWriter(stream, "UTF-8")
-                outputStreamWriter.write(formBody)
-                outputStreamWriter.flush()
-                outputStreamWriter.close()
-                stream.close()
-                conn.connect()
-
-                val bufferStream = BufferedInputStream(conn.inputStream)
-                val buffer = ByteArrayOutputStream()
-                var data = bufferStream.read()
-                while (data != -1) {
-                    buffer.write(data)
-                    data = bufferStream.read()
+                OutputStreamWriter(conn.outputStream, "UTF-8").use { writer ->
+                    writer.write(formBody)
+                    writer.flush()
                 }
 
-                val dataJson = buffer.toString()
-
-                if (conn.responseCode >= 400) {
-                    EversenseLogger.error(TAG, "Failed to do login - status: ${conn.responseCode}, data: $dataJson")
+                val responseCode = conn.responseCode
+                if (responseCode >= 400) {
+                    val errorBody = try {
+                        conn.errorStream?.readBytes()?.toString(Charsets.UTF_8) ?: ""
+                    } catch (e: Exception) { "" }
+                    EversenseLogger.error(TAG, "Login failed — status: $responseCode, body: $errorBody")
                     return null
                 }
 
-                EversenseLogger.info(TAG, "Login success - status: ${conn.responseCode}")
+                val dataJson = BufferedInputStream(conn.inputStream).use { stream ->
+                    val buffer = ByteArrayOutputStream()
+                    var data = stream.read()
+                    while (data != -1) {
+                        buffer.write(data)
+                        data = stream.read()
+                    }
+                    buffer.toString()
+                }
+
+                EversenseLogger.info(TAG, "Login success — status: $responseCode")
                 return Json.decodeFromString(LoginResponseModel.serializer(), dataJson)
             } catch (e: Exception) {
                 EversenseLogger.error(TAG, "Got exception during login - exception: $e")
@@ -161,32 +169,43 @@ class EversenseHttp365Util {
             transmitterSerialNumber: String,
             firmwareVersion: String
         ): Boolean {
-            // Only upload readings that have raw BLE data — backfill history entries have empty rawResponseHex
-            val uploadable = readings.filter { it.rawResponseHex.isNotEmpty() }
-            if (uploadable.isEmpty()) {
-                EversenseLogger.info(TAG, "No readings with raw BLE data to upload — skipping")
-                return true
-            }
+            if (readings.isEmpty()) return true
             val token = getOrRefreshToken(preferences) ?: run {
                 EversenseLogger.error(TAG, "Cannot upload glucose — no valid access token")
                 return false
             }
-            EversenseLogger.info(TAG, "Uploading ${uploadable.size} reading(s) — TransmitterId='$transmitterSerialNumber'")
 
             return try {
-                // EssentialLog must be base64-encoded bytes (System.Byte[] in .NET JSON serialization)
+                // Only upload readings that have raw BLE data — backfill history entries have no
+                // rawResponseHex and cannot produce a valid EssentialLog for the server.
+                val uploadable = readings.filter { it.rawResponseHex.isNotEmpty() }
+                if (uploadable.isEmpty()) {
+                    EversenseLogger.info(TAG, "No readings with raw BLE data to upload — skipping")
+                    return true
+                }
+
+                EversenseLogger.info(TAG, "Uploading ${uploadable.size} reading(s) — TransmitterId='$transmitterSerialNumber'")
+
+                // SensorId: the official app stores the first 8 bytes of the raw sensor ID in reversed
+                // byte order, uppercase — matching what the DMS portal indexes readings by.
+                // EssentialLog: base64-encoded bytes — the .NET server model uses System.Byte[] which
+                // JSON-serializes as base64 (despite the Android app sending "0x"+hex, the server rejects it).
                 // Body must be a bare JSON array — server deserializes directly to List<GlucoseEssentialLogsVM>
                 val jsonBody = uploadable.joinToString(prefix = "[", postfix = "]") { r ->
-                    val rawBytes = r.rawResponseHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-                    val essentialLogBase64 = Base64.getEncoder().encodeToString(rawBytes)
-                    val ts = dateFormatter.format(Date(r.datetime)) + "Z"
-                    EversenseLogger.info(TAG, "  Reading: sensorId='${r.sensorId}' glucose=${r.glucoseInMgDl} ts=$ts rawBytes=${rawBytes.size}")
-                    """{"SensorId":"${r.sensorId}","TransmitterId":"$transmitterSerialNumber","Timestamp":"$ts","CurrentGlucoseValue":${r.glucoseInMgDl},"CurrentGlucoseDateTime":"$ts","FWVersion":"$firmwareVersion","EssentialLog":"$essentialLogBase64"}"""
+                    val portalSensorId = r.sensorId.chunked(2).take(8).reversed().joinToString("").uppercase()
+                    val essentialLog = Base64.getEncoder().encodeToString(
+                        r.rawResponseHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+                    )
+                    val ts = dateFormatter.format(Date(r.datetime))
+                    EversenseLogger.info(TAG, "  Reading: sensorId='$portalSensorId' glucose=${r.glucoseInMgDl} ts=$ts rawHex=${r.rawResponseHex.length / 2}B")
+                    """{"SensorId":"$portalSensorId","TransmitterId":"$transmitterSerialNumber","Timestamp":"$ts","CurrentGlucoseValue":${r.glucoseInMgDl},"CurrentGlucoseDateTime":"$ts","FWVersion":"$firmwareVersion","EssentialLog":"$essentialLog"}"""
                 }
 
                 val url = URL("${uploadBaseUrl}api/v1.0/DiagnosticLog/PostEssentialLogs")
                 val conn = url.openConnection() as HttpURLConnection
                 conn.requestMethod = "POST"
+                conn.connectTimeout = 30_000
+                conn.readTimeout = 30_000
                 conn.setRequestProperty("Authorization", "Bearer $token")
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.doOutput = true
@@ -199,17 +218,244 @@ class EversenseHttp365Util {
 
                 val responseCode = conn.responseCode
                 if (responseCode >= 400) {
-                    val error = try { BufferedInputStream(conn.errorStream).readBytes().toString(Charsets.UTF_8) } catch (e: Exception) { "" }
+                    val error = try { conn.errorStream?.readBytes()?.toString(Charsets.UTF_8) ?: "" } catch (e: Exception) { "" }
                     EversenseLogger.error(TAG, "Glucose upload failed — status: $responseCode, body: $error")
                     false
                 } else {
-                    EversenseLogger.info(TAG, "Glucose upload success — status: $responseCode, readings: ${readings.size}")
+                    val responseBody = try { conn.inputStream.readBytes().toString(Charsets.UTF_8) } catch (e: Exception) { "" }
+                    EversenseLogger.info(TAG, "Glucose upload success — status: $responseCode, readings: ${uploadable.size}, response: $responseBody")
                     true
                 }
             } catch (e: Exception) {
                 EversenseLogger.error(TAG, "Glucose upload exception: $e")
                 false
             }
+        }
+
+        // Map signal strength percentage to SIGNAL_STRENGTH ordinal (from decompiled app)
+        // NO_SIGNAL=0, POOR=1, VERY_LOW=2, LOW=3, GOOD=4, EXCELLENT=5
+        private fun signalStrengthOrdinal(percent: Int): Int = when {
+            percent >= 75 -> 5
+            percent >= 48 -> 4
+            percent >= 30 -> 3
+            percent >= 28 -> 2
+            percent >= 25 -> 1
+            else          -> 0
+        }
+
+        // Map EversenseTrendArrow to Eversense ARROW_TYPE ordinal (from decompiled app)
+        // STALE=0, FALLING_FAST=1, FALLING=2, FLAT=3, RISING=4, RISING_FAST=5
+        private fun trendOrdinal(trend: EversenseTrendArrow): Int = when (trend) {
+            EversenseTrendArrow.NONE          -> 0
+            EversenseTrendArrow.SINGLE_DOWN   -> 1
+            EversenseTrendArrow.FORTY_FIVE_DOWN -> 2
+            EversenseTrendArrow.FLAT          -> 3
+            EversenseTrendArrow.FORTY_FIVE_UP -> 4
+            EversenseTrendArrow.SINGLE_UP     -> 5
+        }
+
+        /**
+         * Post current glucose state to the Eversense DMS portal (api/care/PutCurrentValues).
+         * This updates "Last Sync Date" on the portal and feeds AGP reports.
+         * Returns true on HTTP 2xx, false on any error.
+         */
+        fun putCurrentValues(
+            preferences: SharedPreferences,
+            glucose: Int,
+            timestamp: Long,
+            trend: EversenseTrendArrow,
+            signalStrength: Int,
+            batteryPercentage: Int
+        ): Boolean {
+            val token = getOrRefreshToken(preferences) ?: run {
+                EversenseLogger.error(TAG, "Cannot post current values — no valid access token")
+                return false
+            }
+            return try {
+                val ts = dateFormatter.format(Date(timestamp))
+                val jsonBody = """{"CurrentGlucose":$glucose,"CGTime":"$ts","GlucoseTrend":${trendOrdinal(trend)},"SignalStrength":${signalStrengthOrdinal(signalStrength)},"BatteryStrength":${batteryPercentage.coerceAtLeast(0)},"IsTransmitterConnected":1}"""
+
+                val url = URL("${careBaseUrl}api/care/PutCurrentValues")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 30_000
+                conn.readTimeout = 30_000
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+
+                OutputStreamWriter(conn.outputStream, "UTF-8").use { it.write(jsonBody); it.flush() }
+
+                val responseCode = conn.responseCode
+                if (responseCode >= 400) {
+                    val error = try { conn.errorStream?.readBytes()?.toString(Charsets.UTF_8) ?: "" } catch (e: Exception) { "" }
+                    EversenseLogger.error(TAG, "PutCurrentValues failed — status: $responseCode, body: $error")
+                    false
+                } else {
+                    val responseBody = try { conn.inputStream.readBytes().toString(Charsets.UTF_8) } catch (e: Exception) { "" }
+                    EversenseLogger.info(TAG, "PutCurrentValues success — status: $responseCode, glucose=$glucose, response: $responseBody")
+                    true
+                }
+            } catch (e: Exception) {
+                EversenseLogger.error(TAG, "PutCurrentValues exception: $e")
+                false
+            }
+        }
+
+        /**
+         * Post device events (sensor glucose readings) to the Eversense DMS portal.
+         * This is the endpoint that populates the Sensor Glucose history table in the portal.
+         * Returns true on HTTP 2xx, false on any error.
+         *
+         * Binary format reverse-engineered from com.senseonics.util.AccountConstants in the
+         * decompiled official Eversense app.
+         */
+        fun putDeviceEvents(
+            preferences: SharedPreferences,
+            readings: List<EversenseCGMResult>,
+            transmitterSerialNumber: String
+        ): Boolean {
+            if (readings.isEmpty()) return true
+            val token = getOrRefreshToken(preferences) ?: run {
+                EversenseLogger.error(TAG, "Cannot post device events — no valid access token")
+                return false
+            }
+            return try {
+                val sensorId = readings.firstOrNull { it.sensorId.isNotEmpty() }?.sensorId ?: ""
+                val tzOffsetSec = TimeZone.getDefault().getOffset(Date().time) / 1000
+                val offsetBytes = Base64.getEncoder().encodeToString(int32LE(tzOffsetSec))
+                val sgBytes = buildSgBytes(readings)
+                val mgBytes = buildEmptyMgBytes()
+                val patientBytes = buildEmptyPatientBytes()
+                val alertBytes = buildAlertBytes(sensorId)
+
+                EversenseLogger.info(TAG, "PutDeviceEvents: ${readings.size} reading(s), txId='$transmitterSerialNumber', sensorId='$sensorId'")
+
+                val jsonBody = """{"deviceType":"SMSIMeter","deviceName":"Smart Transmitter (Android)","deviceID":"$transmitterSerialNumber","offsetBytes":"$offsetBytes","sgBytes":"$sgBytes","mgBytes":"$mgBytes","patientBytes":"$patientBytes","alertBytes":"$alertBytes","algorithmVersion":"10"}"""
+
+                val url = URL("${careBaseUrl}api/care/PutDeviceEvents")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 30_000
+                conn.readTimeout = 30_000
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+
+                OutputStreamWriter(conn.outputStream, "UTF-8").use { it.write(jsonBody); it.flush() }
+
+                val responseCode = conn.responseCode
+                if (responseCode >= 400) {
+                    val error = try { conn.errorStream?.readBytes()?.toString(Charsets.UTF_8) ?: "" } catch (e: Exception) { "" }
+                    EversenseLogger.error(TAG, "PutDeviceEvents failed — status: $responseCode, body: $error")
+                    false
+                } else {
+                    val responseBody = try { conn.inputStream.readBytes().toString(Charsets.UTF_8) } catch (e: Exception) { "" }
+                    EversenseLogger.info(TAG, "PutDeviceEvents success — status: $responseCode, readings: ${readings.size}, response: $responseBody")
+                    true
+                }
+            } catch (e: Exception) {
+                EversenseLogger.error(TAG, "PutDeviceEvents exception: $e")
+                false
+            }
+        }
+
+        // ─── Binary encoding helpers (from com.senseonics.bluetoothle.BinaryOperations) ──────
+
+        private fun int16LE(v: Int): ByteArray =
+            byteArrayOf((v and 0xFF).toByte(), ((v shr 8) and 0xFF).toByte())
+
+        private fun int24LE(v: Int): ByteArray =
+            byteArrayOf((v and 0xFF).toByte(), ((v shr 8) and 0xFF).toByte(), ((v shr 16) and 0xFF).toByte())
+
+        private fun int32LE(v: Int): ByteArray =
+            byteArrayOf((v and 0xFF).toByte(), ((v shr 8) and 0xFF).toByte(), ((v shr 16) and 0xFF).toByte(), ((v shr 24) and 0xFF).toByte())
+
+        /** Encode a UTC timestamp as the 2-byte date format used by the Eversense transmitter binary protocol. */
+        private fun calcDateBytes(tsMs: Long): ByteArray {
+            val cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"))
+            cal.timeInMillis = tsMs
+            val year = cal.get(Calendar.YEAR)
+            val month = cal.get(Calendar.MONTH) + 1 // 1-12
+            val day = cal.get(Calendar.DAY_OF_MONTH)
+            var b1 = (year - 2000) shl 1
+            if (month > 7) b1 += 1
+            val b0 = ((month and 7) shl 5) or day
+            return byteArrayOf(b0.toByte(), b1.toByte())
+        }
+
+        /** Encode a UTC timestamp as the 2-byte time format used by the Eversense transmitter binary protocol. */
+        private fun calcTimeBytes(tsMs: Long): ByteArray {
+            val cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"))
+            cal.timeInMillis = tsMs
+            val hour = cal.get(Calendar.HOUR_OF_DAY)
+            val minute = cal.get(Calendar.MINUTE)
+            val second = cal.get(Calendar.SECOND)
+            val b0 = ((minute and 7) shl 5) or (second / 2)
+            val b1 = (hour shl 3) or ((minute and 56) shr 3)
+            return byteArrayOf(b0.toByte(), b1.toByte())
+        }
+
+        /**
+         * Build the sgBytes base64 blob from a list of glucose readings.
+         * Format: header (8C 00 01 00 00 + 3-byte LE count) followed by one record per reading.
+         * Raw sensor ADC values are zeroed — only glucose, timestamp, and sensor ID are populated.
+         */
+        private fun buildSgBytes(readings: List<EversenseCGMResult>): String {
+            val baos = ByteArrayOutputStream()
+            // Header: 8C 00 01 00 00 + count (3 bytes LE)
+            baos.write(byteArrayOf(0x8C.toByte(), 0x00, 0x01, 0x00, 0x00))
+            baos.write(int24LE(readings.size))
+            readings.forEachIndexed { idx, r ->
+                val sensorIdBytes = if (r.sensorId.isNotEmpty())
+                    r.sensorId.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+                else ByteArray(10)
+                baos.write(int24LE(idx + 1))              // record number (1-based)
+                baos.write(calcDateBytes(r.datetime))      // date (2 bytes)
+                baos.write(calcTimeBytes(r.datetime))      // time (2 bytes)
+                baos.write(int16LE(r.glucoseInMgDl))       // glucose (2 bytes LE)
+                baos.write(0x00)                           // padding
+                baos.write(sensorIdBytes)                  // sensor ID bytes
+                // RAW_DATA_INDEX 1, 2, 3, 7, 8 — zeroed (no raw ADC data available)
+                repeat(5) { baos.write(int16LE(0)) }
+                // Accel values (2 bytes) — zeroed
+                baos.write(int16LE(0))
+                // AccelTemp (1 byte) — zeroed
+                baos.write(0x00)
+                // RAW_DATA_INDEX 4, 5, 6 — zeroed
+                repeat(3) { baos.write(int16LE(0)) }
+            }
+            return Base64.getEncoder().encodeToString(baos.toByteArray())
+        }
+
+        /** Build the mgBytes base64 blob with zero BGM/calibration records. */
+        private fun buildEmptyMgBytes(): String {
+            // Header: 98 01 00 + count(2 bytes LE) + 00  → 0 records
+            val bytes = byteArrayOf(0x98.toByte(), 0x01, 0x00, 0x00, 0x00, 0x00)
+            return Base64.getEncoder().encodeToString(bytes)
+        }
+
+        /** Build the patientBytes base64 blob with zero patient event records. */
+        private fun buildEmptyPatientBytes(): String {
+            // Header: 9E 01 00 + count(2 bytes LE)  → 0 events
+            val bytes = byteArrayOf(0x9E.toByte(), 0x01, 0x00, 0x00, 0x00)
+            return Base64.getEncoder().encodeToString(bytes)
+        }
+
+        /**
+         * Build the alertBytes base64 blob with zero alert records.
+         * The header includes the raw sensor ID bytes followed by a zero-count field.
+         */
+        private fun buildAlertBytes(sensorId: String): String {
+            // Header: 93 01 00 + count(2 bytes LE) + sensorIdBytes + 00  → 0 alerts
+            val baos = ByteArrayOutputStream()
+            baos.write(byteArrayOf(0x93.toByte(), 0x01, 0x00, 0x00, 0x00))
+            if (sensorId.isNotEmpty()) {
+                val sensorIdBytes = sensorId.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+                baos.write(sensorIdBytes)
+            }
+            baos.write(0x00)
+            return Base64.getEncoder().encodeToString(baos.toByteArray())
         }
 
         private fun getState(preference: SharedPreferences): EversenseSecureState {
