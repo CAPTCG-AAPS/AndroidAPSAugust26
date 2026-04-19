@@ -420,6 +420,33 @@ class EversensePlugin @Inject constructor(
                 else
                     "Eversense cloud upload: ❌ failed — check credentials and internet"
                 aapsLogger.info(LTag.BGSOURCE, msg)
+
+                // Post current glucose state to the portal (updates Last Sync Date + feeds AGP)
+                val latest = readings.firstOrNull { it.rawResponseHex.isNotEmpty() } ?: readings.firstOrNull()
+                if (latest != null) {
+                    val portalOk = com.nightscout.eversense.util.EversenseHttp365Util.putCurrentValues(
+                        preferences = prefs,
+                        glucose = latest.glucoseInMgDl,
+                        timestamp = latest.datetime,
+                        trend = latest.trend,
+                        signalStrength = state.sensorSignalStrength,
+                        batteryPercentage = state.batteryPercentage
+                    )
+                    aapsLogger.info(LTag.BGSOURCE, "Eversense portal sync: ${if (portalOk) "✅ ok" else "❌ failed"}")
+                }
+
+                // Post device events — this is the endpoint that populates the portal's
+                // Sensor Glucose history table (PutCurrentValues alone only updates Last Sync Date)
+                val uploadableReadings = readings.filter { it.rawResponseHex.isNotEmpty() }
+                if (uploadableReadings.isNotEmpty()) {
+                    val eventsOk = com.nightscout.eversense.util.EversenseHttp365Util.putDeviceEvents(
+                        preferences = prefs,
+                        readings = uploadableReadings,
+                        transmitterSerialNumber = state.transmitterSerialNumber
+                    )
+                    aapsLogger.info(LTag.BGSOURCE, "Eversense device events: ${if (eventsOk) "✅ ok" else "❌ failed"}")
+                }
+
                 if (cloudUploadToastEnabled()) {
                     mainHandler.post {
                         android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
