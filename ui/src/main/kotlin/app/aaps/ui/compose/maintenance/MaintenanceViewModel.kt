@@ -17,6 +17,7 @@ import app.aaps.core.interfaces.maintenance.CloudDirectoryInfo
 import app.aaps.core.interfaces.maintenance.CloudDirectoryManager
 import app.aaps.core.interfaces.maintenance.ExportConfig
 import app.aaps.core.interfaces.maintenance.ExportDestination
+import app.aaps.core.interfaces.maintenance.ExportPreparation
 import app.aaps.core.interfaces.maintenance.ExportResult
 import app.aaps.core.interfaces.maintenance.FileListProvider
 import app.aaps.core.interfaces.maintenance.ImportExportPrefs
@@ -366,6 +367,8 @@ class MaintenanceViewModel @Inject constructor(
     private val _exportState = MutableStateFlow<ExportState>(ExportState.Idle)
     val exportState: StateFlow<ExportState> = _exportState.asStateFlow()
 
+    private var pendingPreparation: ExportPreparation? = null
+
     fun startExport() {
         uel.log(Action.EXPORT_SETTINGS, Sources.Maintenance)
 
@@ -379,6 +382,8 @@ class MaintenanceViewModel @Inject constructor(
             viewModelScope.launch { _events.emit(MaintenanceEvent.Error(rh.gs(CoreUiR.string.error))) }
             return
         }
+
+        pendingPreparation = preparation
 
         val cached = preparation.cachedPassword
         if (cached != null) {
@@ -405,13 +410,16 @@ class MaintenanceViewModel @Inject constructor(
     }
 
     fun cancelExport() {
+        pendingPreparation = null
         _exportState.value = ExportState.Idle
     }
 
     private fun doExport(password: String) {
+        val file = pendingPreparation?.pendingFile
+        pendingPreparation = null
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
-                importExportPrefs.executeExport(password)
+                importExportPrefs.executeExport(password, file)
             }
             val message = buildExportResultMessage(result)
             _events.emit(MaintenanceEvent.Snackbar(message))
