@@ -1,4 +1,4 @@
-package app.aaps.plugins.source
+﻿package app.aaps.plugins.source
 
 import android.Manifest
 import android.content.Intent
@@ -398,6 +398,17 @@ class EversensePlugin @Inject constructor(
             // Upload E365 readings to Eversense cloud so official app sees data without needing BLE
             if (type == EversenseType.EVERSENSE_365 && state != null && cloudUploadEnabled()) {
                 val prefs = context.getSharedPreferences("EversenseCGMManager", android.content.Context.MODE_PRIVATE)
+                // Sync credentials from AAPS preferences into SECURE_STATE so EversenseHttp365Util can read them
+                val username = preferences.get(EversenseStringKey.EversenseUsername)
+                val password = preferences.get(EversenseStringKey.EversensePassword)
+                if (username.isNotEmpty() && password.isNotEmpty()) {
+                    val secureState = getSecureState().also {
+                        it.username = username
+                        it.password = password
+                    }
+                    saveSecureState(secureState)
+                }
+
                 val uploadOk = com.nightscout.eversense.util.EversenseHttp365Util.uploadGlucoseReadings(
                     preferences = prefs,
                     readings = readings,
