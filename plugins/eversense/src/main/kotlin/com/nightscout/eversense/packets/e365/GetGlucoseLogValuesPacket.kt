@@ -58,7 +58,8 @@ class GetGlucoseLogValuesPacket(
                 EversenseLogger.warning("GetGlucoseLogValuesPacket", "Glucose exceeds limits: $glucose — skipping")
                 continue
             }
-            history.add(GlucoseHistoryItem(valueInMgDl = glucose, datetime = datetime, trend = trend))
+            val rawHex = chunk.joinToString("") { "%02X".format(it.toInt()) }
+            history.add(GlucoseHistoryItem(valueInMgDl = glucose, datetime = datetime, trend = trend, rawResponseHex = rawHex))
         }
 
         EversenseLogger.info("GetGlucoseLogValuesPacket", "History records: ${history.size}")

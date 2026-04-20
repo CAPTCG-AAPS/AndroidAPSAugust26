@@ -73,6 +73,7 @@ class Eversense365Communicator {
             }
 
             val result = mutableListOf<EversenseCGMResult>()
+            val previousGlucoseDatetime = state.recentGlucoseDatetime
             state.recentGlucoseDatetime = glucoseData.datetime
             state.recentGlucoseValue = currentGlucose
             state.lastGlucoseRaw = glucoseData.glucoseInMgDl
@@ -89,18 +90,18 @@ class Eversense365Communicator {
                 rawResponseHex = glucoseData.rawResponseHex
             )
 
-            // Read glucose history for backfill
+            // Read glucose history for backfill — use previousGlucoseDatetime so gap readings are included
             try {
                 val logRange = gatt.writePacket<GetLogRangePacket365.Response>(GetLogRangePacket365(LogType.GLUCOSE))
                 val range = com.nightscout.eversense.util.RangeCalculator.calculateGlucoseRange(
-                    logRange.rangeFrom, logRange.rangeTo, state.recentGlucoseDatetime
+                    logRange.rangeFrom, logRange.rangeTo, previousGlucoseDatetime
                 )
                 val history = gatt.writePacket<GetGlucoseLogValuesPacket.Response>(
                     GetGlucoseLogValuesPacket(from = range.from, to = range.to, sensorIdLength = sensorIdLength)
                 )
                 val backfill = history.glucoseHistory
-                    .filter { it.datetime > state.recentGlucoseDatetime }
-                    .map { item -> EversenseCGMResult(glucoseInMgDl = item.valueInMgDl, datetime = item.datetime, trend = item.trend) }
+                    .filter { it.datetime > previousGlucoseDatetime && it.datetime < glucoseData.datetime }
+                    .map { item -> EversenseCGMResult(glucoseInMgDl = item.valueInMgDl, datetime = item.datetime, trend = item.trend, rawResponseHex = item.rawResponseHex) }
                 if (backfill.isNotEmpty()) {
                     result.addAll(0, backfill)
                     EversenseLogger.info(TAG, "Backfill: added ${backfill.size} historical readings")

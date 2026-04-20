@@ -176,8 +176,7 @@ class EversenseHttp365Util {
             }
 
             return try {
-                // Only upload readings that have raw BLE data — backfill history entries have no
-                // rawResponseHex and cannot produce a valid EssentialLog for the server.
+                // Only upload readings that have raw BLE data — readings without rawResponseHex are skipped.
                 val uploadable = readings.filter { it.rawResponseHex.isNotEmpty() }
                 if (uploadable.isEmpty()) {
                     EversenseLogger.info(TAG, "No readings with raw BLE data to upload — skipping")
