@@ -298,9 +298,8 @@ class EversensePlugin @Inject constructor(
             )
         }
 
-        // Calibration due notification — E365 only, fires once at noon per nextCalibrationDate
-        val isAfterNoonCal = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) >= 12
-        if (eversense.is365() && isAfterNoonCal && state.nextCalibrationDate > 0
+        // Calibration due notification — fires once per nextCalibrationDate
+        if (state.nextCalibrationDate > 0
             && System.currentTimeMillis() >= state.nextCalibrationDate
             && !isCalibrationDueDismissed(state.nextCalibrationDate)) {
             setCalibrationDueDismissed(state.nextCalibrationDate)
