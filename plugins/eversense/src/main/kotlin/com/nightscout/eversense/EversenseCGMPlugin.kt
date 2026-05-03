@@ -15,6 +15,8 @@ import com.nightscout.eversense.models.EversenseState
 import com.nightscout.eversense.models.EversenseTransmitterSettings
 import com.nightscout.eversense.packets.EversenseE3Communicator
 import com.nightscout.eversense.packets.e3.GetSignalStrengthRawPacket
+import com.nightscout.eversense.packets.e3.SetDiagnosticModePacket
+import com.nightscout.eversense.packets.e365.SetDiagnosticMode365Packet
 import com.nightscout.eversense.util.EversenseLogger
 import com.nightscout.eversense.util.EversenseScanner
 import com.nightscout.eversense.util.StorageKeys
@@ -174,6 +176,34 @@ class EversenseCGMPlugin {
 
     // writeSettings delegates to EversenseE3Communicator. Transmitter type (E3 vs 365) is
     // determined at GATT connection time via EversenseSecurityType, not stored in EversenseState.
+    /**
+     * Enable or disable diagnostic mode on the transmitter.
+     * Ported from iOS PlacementGuideViewModel which calls setDiagnosticMode(true)
+     * on init and setDiagnosticMode(false) in stop(). Diagnostic mode increases
+     * signal-strength update frequency to ~500ms for accurate placement feedback.
+     * Must be called from a background thread as it performs a BLE write.
+     */
+    fun setDiagnosticMode(isEnabled: Boolean) {
+        val gattCallback = this.gattCallback ?: run {
+            EversenseLogger.error(TAG, "Cannot set diagnostic mode — no gattCallback")
+            return
+        }
+        if (!gattCallback.isConnected()) {
+            EversenseLogger.warning(TAG, "Cannot set diagnostic mode — not connected")
+            return
+        }
+        try {
+            if (gattCallback.is365()) {
+                gattCallback.writePacket<SetDiagnosticMode365Packet.Response>(SetDiagnosticMode365Packet(isEnabled))
+            } else {
+                gattCallback.writePacket<SetDiagnosticModePacket.Response>(SetDiagnosticModePacket(isEnabled))
+            }
+            EversenseLogger.info(TAG, "Diagnostic mode set to $isEnabled")
+        } catch (e: Exception) {
+            EversenseLogger.warning(TAG, "setDiagnosticMode failed: $e")
+        }
+    }
+
     fun writeSettings(settings: EversenseTransmitterSettings): Boolean {
         val preferences = preferences ?: run {
             EversenseLogger.error(TAG, "No preferences available. Make sure setContext has been called")
@@ -314,3 +344,4 @@ class EversenseCGMPlugin {
         }
     }
 }
+

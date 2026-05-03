@@ -1,4 +1,4 @@
-﻿package app.aaps.plugins.source.activities
+package app.aaps.plugins.source.activities
 
 import android.os.Bundle
 import android.os.Handler
@@ -14,6 +14,8 @@ import com.nightscout.eversense.callbacks.EversenseWatcher
 import com.nightscout.eversense.enums.EversenseType
 import com.nightscout.eversense.models.EversenseCGMResult
 import com.nightscout.eversense.models.EversenseState
+import java.text.DateFormat
+import java.util.Date
 
 class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
 
@@ -29,6 +31,8 @@ class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
     private lateinit var signalValue: TextView
     private lateinit var instructionText: TextView
     private lateinit var lastUpdateText: TextView
+
+    private val timeFormatter: DateFormat = DateFormat.getTimeInstance(DateFormat.MEDIUM)
 
     private val pollRunnable = object : Runnable {
         override fun run() {
@@ -69,13 +73,21 @@ class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
             showWaiting()
         }
 
-        mainHandler.post(pollRunnable)
+        // Mirrors iOS PlacementGuideViewModel.init: enable diagnostic mode on open
+        // so the transmitter increases its signal-strength broadcast frequency.
+        Thread {
+            Thread.sleep(500)
+            eversense.setDiagnosticMode(true)
+            mainHandler.post(pollRunnable)
+        }.start()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         mainHandler.removeCallbacks(pollRunnable)
         eversense.removeWatcher(this)
+        // Mirrors iOS PlacementGuideViewModel.stop(): disable diagnostic mode on close
+        Thread { eversense.setDiagnosticMode(false) }.start()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -85,8 +97,12 @@ class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
 
     override fun onStateChanged(state: EversenseState) {
         mainHandler.post {
-            if (state.sensorSignalStrength > 0) updateSignalUI(state.sensorSignalStrength)
-            else showWaiting()
+            if (state.sensorSignalStrength > 0) {
+                updateSignalUI(state.sensorSignalStrength)
+                lastUpdateText.text = getString(R.string.eversense_placement_last_update, timeFormatter.format(Date()))
+            } else {
+                showWaiting()
+            }
         }
     }
 
@@ -126,6 +142,7 @@ class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
         listOf(bar1, bar2, bar3, bar4, bar5).forEach { it.setColorFilter(inactiveColor) }
         signalLabel.text = getString(R.string.eversense_not_connected)
         signalValue.text = ""
+        lastUpdateText.text = ""
         instructionText.text = getString(R.string.eversense_placement_instruction_not_connected)
     }
 
@@ -146,3 +163,5 @@ class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
         else           -> 0
     }
 }
+
+

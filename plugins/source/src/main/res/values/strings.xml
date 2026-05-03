@@ -108,6 +108,7 @@
     <string name="eversense_placement_instruction_weak">Weak signal. Reposition the transmitter closer to the sensor.</string>
     <string name="eversense_placement_instruction_poor">Poor signal. Make sure the transmitter is placed directly over the sensor site.</string>
     <string name="eversense_placement_instruction_not_connected">Connect to your transmitter to view signal strength.</string>
+    <string name="eversense_placement_last_update">Last update: %1$s</string>
     <string name="eversense_placement_reading">Reading&#8230;</string>`n    <string name="eversense_placement_connected">Transmitter Connected</string>
     <string name="eversense_placement_connected_instruction">Your transmitter is connected. Make sure it is positioned directly over your sensor site and secured with the adhesive patch.</string>
     <string name="eversense_calibration_sending">Sending calibration&#8230;</string>
@@ -120,6 +121,7 @@
     <string name="eversense_transmitter_not_placed_summary">Make sure the transmitter is placed directly over the sensor site and secured with the adhesive patch.</string>
     <string name="eversense_reconnecting">Reconnecting…</string>
 </resources>
+
 
 
 
