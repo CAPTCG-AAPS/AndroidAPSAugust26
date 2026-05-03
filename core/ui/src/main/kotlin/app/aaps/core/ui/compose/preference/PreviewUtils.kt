@@ -172,7 +172,7 @@ private object PreviewConfig : Config {
     override fun isEngineeringModeOrRelease(): Boolean = true
     override fun isEngineeringMode(): Boolean = false
     override fun isEnabled(option: ExternalOptions): Boolean = false
-    override fun enableOmnipodDriftCompensation(): Boolean = false
 }
+
 
 
