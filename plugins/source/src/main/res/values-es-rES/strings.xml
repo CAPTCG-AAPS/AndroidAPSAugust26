@@ -25,7 +25,6 @@
     <string name="random_bg">Glucosa aleatoria</string>
     <string name="description_source_random_bg">Generar datos aleatorios de glucosa (sólo modo Demo)</string>
     <string name="random_bg_short">BG</string>
-    <string name="direction">dirección</string>
     <!-- Patched Syai Tag App -->
     <string name="syai_tag_app">Syai</string>
     <string name="description_source_patched_syai_tag_app">Recibir los valores de glucosa de la aplicación Syai/Ottai</string>
@@ -35,6 +34,12 @@
     <!-- Patched Sino App -->
     <string name="patched_sino_app">Aplicación Sino</string>
     <string name="description_source_patched_sino_app">Recibir los valores de glucosa de la aplicación parcheada Sino</string>
+    <!-- Instara App -->
+    <string name="instara_app">Instara</string>
+    <string name="description_source_instara_app">Recibir valores de glucosa de la aplicación Instara</string>
+    <!-- Instara preferences -->
+    <string name="pref_title_instara_history_request">Solicitud de datos históricos de Instara</string>
+    <string name="pref_summary_instara_history_request">Solicitar posibles datos históricos faltantes en segundo plano</string>
     <!-- Notification Reader -->
     <string name="notification_reader">Lector de notificaciones</string>
     <string name="description_source_notification_reader">Leer los valores de glucosa de las notificaciones publicadas por las aplicaciones oficiales de MCG (Dexcom, Medtronic, Eversense, etc.)</string>

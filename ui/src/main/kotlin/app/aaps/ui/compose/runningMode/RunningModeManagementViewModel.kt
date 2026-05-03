@@ -9,17 +9,17 @@ import app.aaps.core.data.pump.defs.PumpDescription
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.interfaces.aps.Loop
-import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.db.observeChanges
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.events.EventShowSnackbar
 import app.aaps.core.interfaces.utils.Translator
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.interfaces.Preferences
-import app.aaps.core.ui.compose.SnackbarMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,11 +42,11 @@ class RunningModeManagementViewModel @Inject constructor(
     private val loop: Loop,
     private val profileFunction: ProfileFunction,
     private val activePlugin: ActivePlugin,
-    private val config: Config,
     private val translator: Translator,
     private val preferences: Preferences,
     private val persistenceLayer: PersistenceLayer,
-    private val aapsLogger: AAPSLogger
+    private val aapsLogger: AAPSLogger,
+    private val rxBus: RxBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RunningModeManagementUiState())
@@ -63,7 +63,7 @@ class RunningModeManagementViewModel @Inject constructor(
     fun loadState() {
         viewModelScope.launch {
             try {
-                val runningModeRecord = loop.runningModeRecord
+                val runningModeRecord = loop.runningModeRecord()
                 val currentMode = runningModeRecord.mode
                 val allowedModes = loop.allowedNextModes()
                 val pumpDescription: PumpDescription = activePlugin.activePump.pumpDescription
@@ -74,7 +74,6 @@ class RunningModeManagementViewModel @Inject constructor(
                         currentModeText = translator.translate(currentMode),
                         reasons = runningModeRecord.reasons,
                         allowedNextModes = allowedModes,
-                        isApsMode = config.APS,
                         tempDurationStep15mAllowed = pumpDescription.tempDurationStep15mAllowed,
                         tempDurationStep30mAllowed = pumpDescription.tempDurationStep30mAllowed,
                         isLoading = false
@@ -82,7 +81,8 @@ class RunningModeManagementViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 aapsLogger.error(LTag.UI, "Failed to load running mode state", e)
-                _uiState.update { it.copy(isLoading = false, snackbarMessage = SnackbarMessage.Error(e.message ?: "Failed to load running mode state")) }
+                _uiState.update { it.copy(isLoading = false) }
+                rxBus.send(EventShowSnackbar(e.message ?: "Failed to load running mode state", EventShowSnackbar.Type.Error))
             }
         }
     }
@@ -143,12 +143,6 @@ class RunningModeManagementViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Clear error state
-     */
-    fun clearSnackbar() {
-        _uiState.update { it.copy(snackbarMessage = null) }
-    }
 }
 
 /**
@@ -160,9 +154,7 @@ data class RunningModeManagementUiState(
     val currentModeText: String = "",
     val reasons: String? = null,
     val allowedNextModes: List<RM.Mode> = emptyList(),
-    val isApsMode: Boolean = false,
     val tempDurationStep15mAllowed: Boolean = false,
     val tempDurationStep30mAllowed: Boolean = false,
-    val isLoading: Boolean = true,
-    val snackbarMessage: SnackbarMessage? = null
+    val isLoading: Boolean = true
 )

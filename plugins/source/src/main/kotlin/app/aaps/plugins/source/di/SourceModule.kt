@@ -14,11 +14,8 @@ import app.aaps.plugins.source.SyaiPlugin
 import app.aaps.plugins.source.TomatoPlugin
 import app.aaps.plugins.source.XdripSourcePlugin
 import app.aaps.plugins.source.activities.RequestDexcomPermissionActivity
-import app.aaps.plugins.source.EversensePlugin
-import app.aaps.plugins.source.activities.EversenseStatusActivity
-import app.aaps.plugins.source.activities.EversenseCalibrationActivity
-import app.aaps.plugins.source.activities.EversensePlacementActivity
-import app.aaps.plugins.source.activities.RequestEversensePermissionActivity
+import app.aaps.plugins.source.instara.InstaraPlugin
+import app.aaps.plugins.source.instara.InstaraStaleCheckWorker
 import app.aaps.plugins.source.notificationreader.NotificationCollectorService
 import dagger.Binds
 import dagger.Module
@@ -46,12 +43,11 @@ abstract class SourceModule {
     @ContributesAndroidInjector abstract fun contributesSinoAppWorker(): PatchedSinoAppPlugin.PatchedSinoAppWorker
 
     @ContributesAndroidInjector abstract fun contributesRequestDexcomPermissionActivity(): RequestDexcomPermissionActivity
-    @ContributesAndroidInjector abstract fun contributesEversensePlugin(): EversensePlugin
-    @ContributesAndroidInjector abstract fun contributesRequestEversensePermissionActivity(): RequestEversensePermissionActivity
-    @ContributesAndroidInjector abstract fun contributesEversenseCalibrationActivity(): EversenseCalibrationActivity
-    @ContributesAndroidInjector abstract fun contributesEversenseStatusActivity(): EversenseStatusActivity
-    @ContributesAndroidInjector abstract fun contributesEversensePlacementActivity(): EversensePlacementActivity
     @ContributesAndroidInjector abstract fun contributesNotificationCollectorService(): NotificationCollectorService
+
+    // Instara related worker
+    @ContributesAndroidInjector abstract fun contributesInstaraWorker(): InstaraPlugin.InstaraWorker
+    @ContributesAndroidInjector abstract fun contributesInstaraStaleCheckWorker(): InstaraStaleCheckWorker
 
     @Module
     @InstallIn(SingletonComponent::class)

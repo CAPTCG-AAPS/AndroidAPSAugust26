@@ -10,11 +10,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,7 +49,6 @@ import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.compose.AapsTopAppBar
 import app.aaps.core.ui.compose.ComposablePluginContent
-import app.aaps.core.ui.compose.LocalSnackbarHostState
 import app.aaps.core.ui.compose.ScreenMode
 import app.aaps.core.ui.compose.ToolbarConfig
 import app.aaps.core.ui.compose.navigation.ElementType
@@ -91,6 +87,8 @@ import app.aaps.ui.compose.quickWizard.QuickWizardManagementScreen
 import app.aaps.ui.compose.quickWizard.viewmodels.QuickWizardManagementViewModel
 import app.aaps.ui.compose.runningMode.RunningModeManagementViewModel
 import app.aaps.ui.compose.runningMode.RunningModeScreen
+import app.aaps.ui.compose.scenes.SceneListScreen
+import app.aaps.ui.compose.scenes.wizard.SceneWizardScreen
 import app.aaps.ui.compose.siteRotationDialog.SiteRotationManagementScreen
 import app.aaps.ui.compose.siteRotationDialog.SiteRotationSettingsScreen
 import app.aaps.ui.compose.siteRotationDialog.viewModels.SiteRotationManagementViewModel
@@ -380,6 +378,7 @@ fun NavGraphBuilder.appNavGraph(
         ImportSettingsScreen(
             viewModel = importViewModel,
             prefFileList = prefFileList,
+            rxBus = rxBus,
             onClose = { navController.safePopBackStack() }
         )
     }
@@ -500,6 +499,25 @@ fun NavGraphBuilder.appNavGraph(
         QuickLauchConfigScreen(
             viewModel = quickLaunchConfigViewModel,
             onNavigateBack = { navController.safePopBackStack() }
+        )
+    }
+
+    composable(AppRoute.SceneList.route) {
+        SceneListScreen(
+            onNavigateToWizard = {
+                navController.navigate(AppRoute.SceneWizard.createRoute())
+            },
+            onNavigateToEditor = { sceneId ->
+                navController.navigate(AppRoute.SceneWizard.createRoute(sceneId))
+            },
+            onNavigateBack = { navController.popBackStack() }
+        )
+    }
+
+    composable(AppRoute.SceneWizard.route) {
+        SceneWizardScreen(
+            onFinished = { navController.popBackStack() },
+            onCancel = { navController.popBackStack() }
         )
     }
 
@@ -678,34 +696,30 @@ private fun PluginContentRoute(
             )
         )
     }
-    val pluginSnackbarHostState = remember { SnackbarHostState() }
-    CompositionLocalProvider(LocalSnackbarHostState provides pluginSnackbarHostState) {
-        Scaffold(
-            snackbarHost = { SnackbarHost(pluginSnackbarHostState) },
-            topBar = {
-                AapsTopAppBar(
-                    title = { Text(toolbarConfig.title) },
-                    navigationIcon = { toolbarConfig.navigationIcon() },
-                    actions = { toolbarConfig.actions(this) }
-                )
-            }
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                composeContent.Render(
-                    setToolbarConfig = { config -> toolbarConfig = config },
-                    onNavigateBack = { navController.safePopBackStack() },
-                    onSettings = {
-                        onNavigationRequest(
-                            NavigationRequest.PluginPreferences(plugin.javaClass.simpleName),
-                            navController
-                        )
-                    }
-                )
-            }
+    Scaffold(
+        topBar = {
+            AapsTopAppBar(
+                title = { Text(toolbarConfig.title) },
+                navigationIcon = { toolbarConfig.navigationIcon() },
+                actions = { toolbarConfig.actions(this) }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            composeContent.Render(
+                setToolbarConfig = { config -> toolbarConfig = config },
+                onNavigateBack = { navController.safePopBackStack() },
+                onSettings = {
+                    onNavigationRequest(
+                        NavigationRequest.PluginPreferences(plugin.javaClass.simpleName),
+                        navController
+                    )
+                }
+            )
         }
     }
 }

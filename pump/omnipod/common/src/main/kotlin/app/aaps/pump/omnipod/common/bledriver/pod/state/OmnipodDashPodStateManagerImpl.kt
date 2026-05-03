@@ -3,6 +3,7 @@ package app.aaps.pump.omnipod.common.bledriver.pod.state
 import android.os.SystemClock
 import app.aaps.core.data.model.BS
 import app.aaps.core.interfaces.configuration.Config
+import app.aaps.core.interfaces.configuration.ExternalOptions
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.rx.bus.RxBus
@@ -344,7 +345,7 @@ class OmnipodDashPodStateManagerImpl @Inject constructor(
     }
 
     override fun needsBasalCorrection(): Boolean {
-        if (!config.enableOmnipodDriftCompensation()) return false  // Semaphore file check
+        if (!config.isEnabled(ExternalOptions.ENABLE_OMNIPOD_DRIFT_COMPENSATION)) return false  // Semaphore file check
 
         val correctionThreshold = -PodConstants.POD_PULSE_BOLUS_UNITS / 2  // -0.025U
         
@@ -762,7 +763,7 @@ class OmnipodDashPodStateManagerImpl @Inject constructor(
     }
 
     override fun onStart() {
-        logger.info(LTag.PUMP, "Omnipod Dash drift compensation: ${if (config.enableOmnipodDriftCompensation()) "enabled" else "disabled"}")
+        logger.info(LTag.PUMP, "Omnipod Dash drift compensation: ${if (config.isEnabled(ExternalOptions.ENABLE_OMNIPOD_DRIFT_COMPENSATION)) "enabled" else "disabled"}")
         when (getCommandConfirmationFromState()) {
             CommandConfirmationSuccess, CommandConfirmationDenied -> {
                 val now = SystemClock.elapsedRealtime()
