@@ -76,3 +76,4 @@ class ConfigImpl @Inject constructor(
         }
     override fun enableOmnipodDriftCompensation(): Boolean = isEnabled(ExternalOptions.OMNIPOD_DRIFT_COMPENSATION)
 }
+
