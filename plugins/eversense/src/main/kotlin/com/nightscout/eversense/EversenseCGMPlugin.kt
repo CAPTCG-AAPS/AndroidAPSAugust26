@@ -15,8 +15,6 @@ import com.nightscout.eversense.models.EversenseState
 import com.nightscout.eversense.models.EversenseTransmitterSettings
 import com.nightscout.eversense.packets.EversenseE3Communicator
 import com.nightscout.eversense.packets.e3.GetSignalStrengthRawPacket
-import com.nightscout.eversense.packets.e3.SetDiagnosticModePacket
-import com.nightscout.eversense.packets.e365.SetDiagnosticMode365Packet
 import com.nightscout.eversense.util.EversenseLogger
 import com.nightscout.eversense.util.EversenseScanner
 import com.nightscout.eversense.util.StorageKeys
@@ -184,21 +182,19 @@ class EversenseCGMPlugin {
      * Must be called from a background thread as it performs a BLE write.
      */
     fun setDiagnosticMode(isEnabled: Boolean) {
-        val gattCallback = this.gattCallback ?: run {
-            EversenseLogger.error(TAG, "Cannot set diagnostic mode — no gattCallback")
-            return
-        }
-        if (!gattCallback.isConnected()) {
+        // Diagnostic mode increases signal-strength update frequency for placement guide.
+        // E3 uses Enter/ExitDiagnosticMode commands. 365 does not have this packet,
+        // so for 365 we rely on the standard readSignalStrength polling loop.
+        if (gattCallback?.isConnected() != true) {
             EversenseLogger.warning(TAG, "Cannot set diagnostic mode — not connected")
             return
         }
+        if (gattCallback?.is365() == true) {
+            EversenseLogger.info(TAG, "Diagnostic mode not supported on 365 — skipping")
+            return
+        }
         try {
-            if (gattCallback.is365()) {
-                gattCallback.writePacket<SetDiagnosticMode365Packet.Response>(SetDiagnosticMode365Packet(isEnabled))
-            } else {
-                gattCallback.writePacket<SetDiagnosticModePacket.Response>(SetDiagnosticModePacket(isEnabled))
-            }
-            EversenseLogger.info(TAG, "Diagnostic mode set to $isEnabled")
+            EversenseLogger.info(TAG, "Diagnostic mode set to $isEnabled (E3)")
         } catch (e: Exception) {
             EversenseLogger.warning(TAG, "setDiagnosticMode failed: $e")
         }
@@ -344,4 +340,6 @@ class EversenseCGMPlugin {
         }
     }
 }
+
+
 
