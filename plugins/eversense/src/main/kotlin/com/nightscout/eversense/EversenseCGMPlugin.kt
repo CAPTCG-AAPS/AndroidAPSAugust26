@@ -14,6 +14,8 @@ import com.nightscout.eversense.callbacks.EversenseWatcher
 import com.nightscout.eversense.models.EversenseState
 import com.nightscout.eversense.models.EversenseTransmitterSettings
 import com.nightscout.eversense.packets.EversenseE3Communicator
+import com.nightscout.eversense.packets.e3.EnterDiagnosticModePacket
+import com.nightscout.eversense.packets.e3.ExitDiagnosticModePacket
 import com.nightscout.eversense.packets.e3.GetSignalStrengthRawPacket
 import com.nightscout.eversense.util.EversenseLogger
 import com.nightscout.eversense.util.EversenseScanner
@@ -194,6 +196,11 @@ class EversenseCGMPlugin {
             return
         }
         try {
+            if (isEnabled) {
+                gattCallback!!.writePacket<EnterDiagnosticModePacket.Response>(EnterDiagnosticModePacket())
+            } else {
+                gattCallback!!.writePacket<ExitDiagnosticModePacket.Response>(ExitDiagnosticModePacket())
+            }
             EversenseLogger.info(TAG, "Diagnostic mode set to $isEnabled (E3)")
         } catch (e: Exception) {
             EversenseLogger.warning(TAG, "setDiagnosticMode failed: $e")
@@ -340,6 +347,7 @@ class EversenseCGMPlugin {
         }
     }
 }
+
 
 
 
