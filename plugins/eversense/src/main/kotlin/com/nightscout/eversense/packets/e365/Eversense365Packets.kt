@@ -11,6 +11,10 @@ class Eversense365Packets {
 
         const val WriteCommandId = 0x03.toByte()
         const val WriteResponseId = 0x43.toByte()
+        const val OperationCommandId = 0x01.toByte()
+        const val OperationResponseId = 0x41.toByte()
+        const val EnterDiagnosticModeOperationId = 0x08.toByte()
+        const val ExitDiagnosticModeOperationId = 0x09.toByte()
 
         const val NotificationResponseId = 0x44.toByte()
 

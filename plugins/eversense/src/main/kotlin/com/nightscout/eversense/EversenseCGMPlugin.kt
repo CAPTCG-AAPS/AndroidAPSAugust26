@@ -16,6 +16,8 @@ import com.nightscout.eversense.models.EversenseTransmitterSettings
 import com.nightscout.eversense.packets.EversenseE3Communicator
 import com.nightscout.eversense.packets.e3.EnterDiagnosticModePacket
 import com.nightscout.eversense.packets.e3.ExitDiagnosticModePacket
+import com.nightscout.eversense.packets.e365.EnterDiagnosticMode365Packet
+import com.nightscout.eversense.packets.e365.ExitDiagnosticMode365Packet
 import com.nightscout.eversense.packets.e3.GetSignalStrengthRawPacket
 import com.nightscout.eversense.util.EversenseLogger
 import com.nightscout.eversense.util.EversenseScanner
@@ -185,23 +187,28 @@ class EversenseCGMPlugin {
      */
     fun setDiagnosticMode(isEnabled: Boolean) {
         // Diagnostic mode increases signal-strength update frequency for placement guide.
-        // E3 uses Enter/ExitDiagnosticMode commands. 365 does not have this packet,
-        // so for 365 we rely on the standard readSignalStrength polling loop.
+        // E3 uses Enter/ExitDiagnosticMode commands.
+        // 365 uses Operation packets with enter/exit operation IDs.
         if (gattCallback?.isConnected() != true) {
             EversenseLogger.warning(TAG, "Cannot set diagnostic mode — not connected")
             return
         }
-        if (gattCallback?.is365() == true) {
-            EversenseLogger.info(TAG, "Diagnostic mode not supported on 365 — skipping")
-            return
-        }
         try {
-            if (isEnabled) {
-                gattCallback!!.writePacket<EnterDiagnosticModePacket.Response>(EnterDiagnosticModePacket())
+            if (gattCallback?.is365() == true) {
+                if (isEnabled) {
+                    gattCallback!!.writePacket<EnterDiagnosticMode365Packet.Response>(EnterDiagnosticMode365Packet())
+                } else {
+                    gattCallback!!.writePacket<ExitDiagnosticMode365Packet.Response>(ExitDiagnosticMode365Packet())
+                }
+                EversenseLogger.info(TAG, "Diagnostic mode set to $isEnabled (365)")
             } else {
-                gattCallback!!.writePacket<ExitDiagnosticModePacket.Response>(ExitDiagnosticModePacket())
+                if (isEnabled) {
+                    gattCallback!!.writePacket<EnterDiagnosticModePacket.Response>(EnterDiagnosticModePacket())
+                } else {
+                    gattCallback!!.writePacket<ExitDiagnosticModePacket.Response>(ExitDiagnosticModePacket())
+                }
+                EversenseLogger.info(TAG, "Diagnostic mode set to $isEnabled (E3)")
             }
-            EversenseLogger.info(TAG, "Diagnostic mode set to $isEnabled (E3)")
         } catch (e: Exception) {
             EversenseLogger.warning(TAG, "setDiagnosticMode failed: $e")
         }
@@ -347,6 +354,7 @@ class EversenseCGMPlugin {
         }
     }
 }
+
 
 
 
