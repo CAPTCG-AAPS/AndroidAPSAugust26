@@ -15,7 +15,7 @@
     <!--     Activities-->
     <string name="activity_monitor">活动监视器</string>
     <string name="time_range">时间范围</string>
-    <string name="dexcom_tir">Dexcom TIR</string>
+    <string name="dexcom_tir">Eversense TIR</string>
     <string name="cgp_title">血糖五边形（CGP）- 14天</string>
     <string name="cgp_tor" comment="Glucose Pentagon axis: Time out of Range">ToR</string>
     <string name="cgp_cv" comment="Glucose Pentagon axis: Coefficient of Variation">\%CV</string>
@@ -302,3 +302,4 @@
     <string name="widget_rm_suspended">已暂停</string>
     <string name="widget_rm_resume">恢复</string>
 </resources>
+

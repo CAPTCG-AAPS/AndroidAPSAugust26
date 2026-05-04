@@ -15,7 +15,7 @@
     <!--     Activities-->
     <string name="activity_monitor">Aktivitetsmonitor</string>
     <string name="time_range">Tidsrom</string>
-    <string name="dexcom_tir">Dexcom TIR</string>
+    <string name="dexcom_tir">Eversense TIR</string>
     <string name="cgp_title">Glukose Pentagon (CGP) – 14 dager</string>
     <string name="cgp_tor" comment="Glucose Pentagon axis: Time out of Range">ToR</string>
     <string name="cgp_cv" comment="Glucose Pentagon axis: Coefficient of Variation">\%CV</string>
@@ -302,3 +302,4 @@
     <string name="widget_rm_suspended">Pauset</string>
     <string name="widget_rm_resume">Gjenoppta</string>
 </resources>
+

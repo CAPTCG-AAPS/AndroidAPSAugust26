@@ -15,7 +15,7 @@
     <!--     Activities-->
     <string name="activity_monitor">Monitor attività</string>
     <string name="time_range">Intervallo di tempo</string>
-    <string name="dexcom_tir">Dexcom TIR</string>
+    <string name="dexcom_tir">Eversense TIR</string>
     <string name="cgp_title">Glucosio Pentagon (CGP) — 14 giorni</string>
     <string name="cgp_tor" comment="Glucose Pentagon axis: Time out of Range">ToR</string>
     <string name="cgp_cv" comment="Glucose Pentagon axis: Coefficient of Variation">\%CV</string>
@@ -302,3 +302,4 @@
     <string name="widget_rm_suspended">Sospeso</string>
     <string name="widget_rm_resume">Riprendi</string>
 </resources>
+

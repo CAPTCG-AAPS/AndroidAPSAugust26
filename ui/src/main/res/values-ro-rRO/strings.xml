@@ -15,7 +15,7 @@
     <!--     Activities-->
     <string name="activity_monitor">Monitor activitate</string>
     <string name="time_range">Interval de timp</string>
-    <string name="dexcom_tir">Dexcom TIR</string>
+    <string name="dexcom_tir">Eversense TIR</string>
     <string name="cgp_title">Pentagon glicemie (CGP) - 14 zile</string>
     <string name="cgp_tor" comment="Glucose Pentagon axis: Time out of Range">ToR</string>
     <string name="cgp_cv" comment="Glucose Pentagon axis: Coefficient of Variation">\%CV</string>
@@ -291,3 +291,4 @@
     <string name="widget_rm_suspended">Suspendat</string>
     <string name="widget_rm_resume">Reluați</string>
 </resources>
+
