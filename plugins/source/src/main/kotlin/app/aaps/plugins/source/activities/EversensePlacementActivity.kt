@@ -34,13 +34,26 @@ class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
 
     private val timeFormatter: DateFormat = DateFormat.getTimeInstance(DateFormat.MEDIUM)
 
-    private val pollRunnable = object : Runnable {
-        override fun run() {
-            if (eversense.isConnected()) {
-                Thread { eversense.readSignalStrength() }.start()
+    @Volatile private var polling = false
+
+    // Mirrors iOS PlacementGuideViewModel.updateSignalStrength(): a single background
+    // thread that reads signal, sleeps 500ms, then loops. Chained (not Handler-scheduled)
+    // so each read completes before the next starts — prevents GATT queue pile-up.
+    private fun startPolling() {
+        if (polling) return
+        polling = true
+        Thread {
+            while (polling) {
+                if (eversense.isConnected()) {
+                    eversense.readSignalStrength()
+                }
+                Thread.sleep(500)
             }
-            mainHandler.postDelayed(this, 500)
-        }
+        }.start()
+    }
+
+    private fun stopPolling() {
+        polling = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,13 +91,13 @@ class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
         Thread {
             Thread.sleep(500)
             eversense.setDiagnosticMode(true)
-            mainHandler.post(pollRunnable)
+            startPolling()
         }.start()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mainHandler.removeCallbacks(pollRunnable)
+        stopPolling()
         eversense.removeWatcher(this)
         // Mirrors iOS PlacementGuideViewModel.stop(): disable diagnostic mode on close
         Thread { eversense.setDiagnosticMode(false) }.start()
@@ -163,5 +176,8 @@ class EversensePlacementActivity : AppCompatActivity(), EversenseWatcher {
         else           -> 0
     }
 }
+
+
+
 
 

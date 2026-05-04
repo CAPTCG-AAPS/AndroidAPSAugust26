@@ -308,7 +308,7 @@ class EversenseCGMPlugin {
                 response.signalStrength
             } else {
                 val response = gattCallback.writePacket<GetSignalStrengthRawPacket.Response>(GetSignalStrengthRawPacket())
-                EversenseLogger.info(TAG, "E3 signal raw: $($response.rawValue) -> $($response.signalStrength)%")
+                EversenseLogger.info(TAG, "E3 signal raw: ${response.rawValue} -> ${response.signalStrength}%")
                 response.signalStrength
             }
             val stateJson = preferences.getString(com.nightscout.eversense.util.StorageKeys.STATE, null) ?: "{}"
@@ -347,6 +347,9 @@ class EversenseCGMPlugin {
         }
     }
 }
+
+
+
 
 
 
