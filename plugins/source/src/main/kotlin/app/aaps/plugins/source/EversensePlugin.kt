@@ -1,4 +1,4 @@
-﻿package app.aaps.plugins.source
+package app.aaps.plugins.source
 
 import android.Manifest
 import android.content.Intent
@@ -133,6 +133,8 @@ class EversensePlugin @Inject constructor(
             aapsLogger.warn(LTag.BGSOURCE, "Bluetooth permissions not granted — requesting permissions")
             requestBluetoothPermissions()
         }
+        // Alert if 365 credentials are missing
+        if (eversense.is365()) checkCredentialsNotification()
     }
 
     override fun onStop() {
@@ -152,6 +154,20 @@ class EversensePlugin @Inject constructor(
                 ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
         } else {
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun checkCredentialsNotification() {
+        val username = preferences.get(EversenseStringKey.EversenseUsername)
+        val password = preferences.get(EversenseStringKey.EversensePassword)
+        if (username.isEmpty() || password.isEmpty()) {
+            notificationManager.post(
+                NotificationId.EVERSENSE_CREDENTIALS,
+                rh.gs(R.string.eversense_credentials_missing),
+                level = NotificationLevel.URGENT
+            )
+        } else {
+            notificationManager.dismiss(NotificationId.EVERSENSE_CREDENTIALS)
         }
     }
 
@@ -406,6 +422,13 @@ class EversensePlugin @Inject constructor(
                         it.password = password
                     }
                     saveSecureState(secureState)
+                    notificationManager.dismiss(NotificationId.EVERSENSE_CREDENTIALS)
+                } else {
+                    notificationManager.post(
+                        NotificationId.EVERSENSE_CREDENTIALS,
+                        rh.gs(R.string.eversense_credentials_missing),
+                        level = NotificationLevel.URGENT
+                    )
                 }
 
                 val uploadOk = com.nightscout.eversense.util.EversenseHttp365Util.uploadGlucoseReadings(

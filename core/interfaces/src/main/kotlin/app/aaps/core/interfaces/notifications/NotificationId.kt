@@ -97,6 +97,7 @@ enum class NotificationId(
     EVERSENSE_FIRMWARE(96, INFO, CGM),
     EVERSENSE_RELEASE(97, INFO, CGM),
     EVERSENSE_PLACEMENT(98, URGENT, CGM),
+    EVERSENSE_CREDENTIALS(99, URGENT, CGM),
 
     // Loop / APS
     EASY_MODE_ENABLED(2, URGENT, LOOP),
@@ -156,3 +157,4 @@ enum class NotificationId(
         fun fromLegacyId(id: Int): NotificationId? = legacyIdMap[id]
     }
 }
+
