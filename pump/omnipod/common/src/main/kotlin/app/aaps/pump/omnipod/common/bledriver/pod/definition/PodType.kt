@@ -15,7 +15,6 @@ enum class PodType(val value: Int) {
     /** Omnipod Eros (PM=PI=2.x.y), AKA "Omnipod Classic (gen 3)". Uses RileyLink. */
     EROS(0x2),
 
-    // 0x3 is unsupported/unknown: perhaps a later gen Eros or an early gen DASH NXP BLE.
 
     /** Omnipod DASH: either TWI board (firmware 4.x.y) or NXP BLE (firmware 3.x.y). */
     DASH(0x4),

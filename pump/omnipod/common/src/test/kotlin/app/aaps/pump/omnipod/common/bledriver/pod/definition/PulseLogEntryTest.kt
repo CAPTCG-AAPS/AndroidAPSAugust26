@@ -12,9 +12,6 @@ class PulseLogEntryTest {
 
     @Test
     fun `decodes the openomni wiki's own worked example`() {
-        // From github.com/openaps/openomni/wiki/Pulse-Log-Entry's "0x6a fault event" case:
-        // dword 0x51213E00 -> encoder=20, LOAD2 active, basal mode, no bolus tick,
-        // LoadCountVal=125, no fault.
         val entry = PulseLogEntry.decode(0x51213E00.toInt())
 
         assertThat(entry.encoder).isEqualTo(20)
@@ -30,9 +27,6 @@ class PulseLogEntryTest {
 
     @Test
     fun `decodes a synthetic entry exercising every field`() {
-        // Hand-constructed and verified bit-by-bit against the same layout: encoder=5,
-        // LOAD1, bolus mode, low reservoir, immediateBolusTick=6, loadCountVal=300,
-        // comparator+fault flags set, lastEncoderValue=-5 (signed 6-bit).
         val entry = PulseLogEntry.decode(0x147C96FB.toInt())
 
         assertThat(entry.encoder).isEqualTo(5)
@@ -63,8 +57,8 @@ class PulseLogEntryTest {
     @Test
     fun `lastEncoderValue sign-extends the 6-bit field correctly`() {
         assertThat(PulseLogEntry.decode(0x00000000.toInt()).lastEncoderValue).isEqualTo(0)
-        assertThat(PulseLogEntry.decode(0x0000001F.toInt()).lastEncoderValue).isEqualTo(31) // max positive
-        assertThat(PulseLogEntry.decode(0x00000020.toInt()).lastEncoderValue).isEqualTo(-32) // min negative
+        assertThat(PulseLogEntry.decode(0x0000001F.toInt()).lastEncoderValue).isEqualTo(31)
+        assertThat(PulseLogEntry.decode(0x00000020.toInt()).lastEncoderValue).isEqualTo(-32)
         assertThat(PulseLogEntry.decode(0x0000003F.toInt()).lastEncoderValue).isEqualTo(-1)
     }
 

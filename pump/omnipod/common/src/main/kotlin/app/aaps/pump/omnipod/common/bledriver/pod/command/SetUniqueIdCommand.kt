@@ -22,8 +22,8 @@ class SetUniqueIdCommand private constructor(
                 .put(commandType.value)
                 .put(BODY_LENGTH)
                 .putInt(uniqueId)
-                .put(0x14.toByte()) // Unknown - confirmed against OmnipodKit's SetupPodCommand.swift, where this same byte is also just commented "Unknown"; not a gap specific to this port.
-                .put(PACKET_TIMEOUT_LIMIT)
+                .put(0x14.toByte()) // FIXME ??
+                .put(PACKET_TIMEOUT_LIMIT) // FIXME ??
                 .put(encodeInitializationTime(initializationTime))
                 .putInt(lotNumber)
                 .putInt(podSequenceNumber)

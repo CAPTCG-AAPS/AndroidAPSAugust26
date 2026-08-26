@@ -52,20 +52,8 @@ class MessageIO(
     var maxMessageReadTries = 3
     var messageReadTries = 0
 
-    // Dash packets max out at 20 bytes; O5 allows 244-byte packets (see BlePacketLayout /
-    // OmnipodKit's BlePodProfile.swift). Splitting/joining must use the profile matching
-    // the pod actually being talked to.
     private val packetLayout: BlePacketLayout = podType.blePacketLayout
 
-    // Swift's PeripheralManager waits up to 5s for every data packet and command response
-    // alike (waitForData/waitForCommand), Dash included - but Dash pods are RTS/CTS-paced,
-    // so in practice they respond well within Android's 1s default before this ever
-    // matters. O5 has no such pacing (see the isDash gates above/below), and on real
-    // hardware "Could not read SPS0" - the pod's very first response after pairing begins -
-    // lined up exactly with running out of the shorter 3x1s budget this used to always use.
-    // Scoped to O5 only: Dash's existing 1s default is proven against real Dash hardware and
-    // left untouched. Used for both dataBleIO.receivePacket() and the trailing
-    // cmdBleIO.expectCommandType(SUCCESS) wait in sendMessage() below.
     private val readTimeoutMs: Long =
         if (podType.isO5) MESSAGE_READ_TIMEOUT_MS else BleCharacteristicIO.DEFAULT_IO_TIMEOUT_MS
 
@@ -79,11 +67,6 @@ class MessageIO(
         }
         dataBleIO.flushIncomingQueue()
 
-        // RTS/CTS flow control is Dash-specific - Omnipod 5 pods write data packets
-        // directly with no request/clear-to-send preamble (see OmnipodKit's
-        // PeripheralManager+OmnipodKit.swift sendMessagePacket(): `if podType.isDash {
-        // RTS/CTS } else { skip, write directly }`). Sending RTS to an O5 pod gets no
-        // response at all, since it doesn't speak that handshake.
         if (podType.isDash) {
             val rtsSendResult = cmdBleIO.sendAndConfirmPacket(BleCommandRTS.data)
             if (rtsSendResult is BleSendErrorSending) {
@@ -137,9 +120,6 @@ class MessageIO(
 
     @Suppress("ReturnCount")
     fun receiveMessage(readRTS: Boolean = true): MessagePacket? {
-        // Same Dash-only RTS/CTS gating as sendMessage() - see the comment there. An O5
-        // pod sends its response data directly with no RTS to wait for and no CTS it
-        // expects back.
         if (podType.isDash) {
             if (readRTS) {
                 val expectRTS = cmdBleIO.expectCommandType(BleCommandRTS, MESSAGE_READ_TIMEOUT_MS)

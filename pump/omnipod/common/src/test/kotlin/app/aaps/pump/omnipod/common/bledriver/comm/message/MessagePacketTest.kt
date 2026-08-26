@@ -36,16 +36,13 @@ class MessagePacketTest {
 
     @Test
     fun `the header's size field is unaffected by a trailing signature - only payload counts`() {
-        val payload = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08) // 8 bytes = "has tag" MAC size
+        val payload = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08)
         val signature = ByteArray(64) { 0x11 }
 
         val unsigned = packet(payload, signatureData = null).asByteArray()
         val signed = packet(payload, signatureData = signature).asByteArray()
 
-        // Bytes [6,8) hold the size field (see MessagePacket.asByteArray/parse) - identical
-        // regardless of a trailing signature, since size is computed from payload.size alone.
         assertThat(signed.copyOfRange(6, 8)).isEqualTo(unsigned.copyOfRange(6, 8))
-        // The first 16 bytes (the AAD Session.sign() signs) are identical too.
         assertThat(signed.copyOfRange(0, 16)).isEqualTo(unsigned.copyOfRange(0, 16))
     }
 

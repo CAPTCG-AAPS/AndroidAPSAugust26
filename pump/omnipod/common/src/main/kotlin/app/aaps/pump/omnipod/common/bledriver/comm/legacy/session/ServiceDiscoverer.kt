@@ -69,9 +69,6 @@ class ServiceDiscoverer(
             ?: throw ConnectException("Characteristic not found: ${dataCharacteristicType.value}")
         return mapOf(
             CharacteristicType.CMD to cmdChar,
-            // Downstream code (e.g. Connection.kt) keys off CharacteristicType.DATA
-            // specifically; map whichever pod-type-specific characteristic we found back
-            // onto that same key so existing consumers don't need pod-type awareness too.
             CharacteristicType.DATA to dataChar
         )
     }

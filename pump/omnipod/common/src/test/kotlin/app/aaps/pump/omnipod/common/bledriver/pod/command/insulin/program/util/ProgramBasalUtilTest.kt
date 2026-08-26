@@ -7,9 +7,6 @@ class ProgramBasalUtilTest {
 
     @Test
     fun `mapTenthPulsesPerSlotToLongInsulinProgramElements advances startSlotIndex by the finished element's slot count`() {
-        // 3 slots @10, 2 slots @20, 4 slots @30 -> startSlotIndex should be 0, 3, 5 (not 0, 1, 2, which
-        // is what you get if startSlotIndex is advanced by 1 every time instead of by the previous
-        // element's actual slot count).
         val tenthPulsesPerSlot = shortArrayOf(10, 10, 10, 20, 20, 30, 30, 30, 30)
 
         val elements = ProgramBasalUtil.mapTenthPulsesPerSlotToLongInsulinProgramElements(tenthPulsesPerSlot)

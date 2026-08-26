@@ -6,7 +6,7 @@ import app.aaps.pump.omnipod.common.bledriver.pod.definition.PodType
  * Centralized BLE service/characteristic UUIDs for Dash and Omnipod 5 pods, ported from
  * OmnipodKit's BluetoothServices.swift (loopandlearn/OmnipodKit).
  *
- * Dash and O5 share the same GATT *service* UUID and *command* characteristic UUID —
+ * Dash and O5 share the same GATT *service* UUID and *command* characteristic UUID -
  * only the *data* characteristic and the pre-pairing advertisement UUID scheme differ.
  * This is additive, standalone infrastructure: existing Dash code paths
  * ([app.aaps.pump.omnipod.common.bledriver.comm.legacy.scan.BleDiscoveredDevice],
@@ -35,7 +35,7 @@ object BluetoothServiceUuids {
     /**
      * O5's 128-bit advertisement service UUID *before pairing* (embeds a placeholder
      * PDM id of 0xFFFFFFFE), used as a BLE scan filter. After pairing, a real pod's
-     * advertisement embeds the actual PDM id in the same position instead — see
+     * advertisement embeds the actual PDM id in the same position instead - see
      * [o5AdvertisementUuidForPdmId].
      */
     const val O5_UNPAIRED_ADVERTISEMENT_UUID = "CE1F923D-C539-48EA-7300-0AFFFFFFFE00"

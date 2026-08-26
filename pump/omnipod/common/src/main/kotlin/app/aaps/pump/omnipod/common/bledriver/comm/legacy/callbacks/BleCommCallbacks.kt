@@ -131,10 +131,6 @@ class BleCommCallbacks(
         val payload = characteristic.value
         val uuid = characteristic.uuid.toString()
 
-        // O5's heartbeat characteristic (see O5Connection.enableHeartbeatNotifications) has
-        // no CharacteristicType entry and nothing consumes it from a queue - it's a passive
-        // keep-alive signal, not part of the request/response message protocol. Handle it
-        // here before byValue() so an unrecognized UUID doesn't throw.
         if (uuid.equals(BluetoothServiceUuids.O5_HEARTBEAT_CHARACTERISTIC_UUID, ignoreCase = true)) {
             aapsLogger.debug(LTag.PUMPBTCOMM, "Received O5 heartbeat: ${payload.toHex()}")
             return

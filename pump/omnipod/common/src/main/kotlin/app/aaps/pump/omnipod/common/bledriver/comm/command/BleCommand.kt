@@ -33,15 +33,11 @@ data class BleCommandNack(val idx: Byte) : BleCommand(BleCommandType.NACK, byteA
     }
 }
 
-// Confirmed against OmnipodKit's own PeripheralManager+OmnipodKit.swift sendHello():
-// `Data([PodCommand.HELLO.rawValue, 0x01, 0x04]) + controllerId` - same two constants, and the
-// reference implementation has no comment explaining them either. Not a gap specific to this
-// port; nobody has published what these two bytes mean.
 data class BleCommandHello(private val controllerId: Int) : BleCommand(
     BleCommandType.HELLO,
     ByteBuffer.allocate(6)
-        .put(1.toByte())
-        .put(4.toByte())
+        .put(1.toByte()) // TODO find the meaning of this constant
+        .put(4.toByte()) // TODO find the meaning of this constant
         .putInt(controllerId).array()
 )
 

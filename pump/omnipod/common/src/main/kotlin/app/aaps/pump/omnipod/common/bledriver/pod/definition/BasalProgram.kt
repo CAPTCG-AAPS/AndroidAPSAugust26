@@ -6,14 +6,6 @@ class BasalProgram(
     segments: List<Segment>
 ) {
 
-    // Nullable, despite mutableSegments always being non-null through this constructor: Gson
-    // deserializes persisted BasalProgram instances via reflection, which allocates the object
-    // and sets fields directly WITHOUT ever calling this constructor - so a BasalProgram
-    // persisted under an older field layout (e.g. from before this class had a
-    // mutableSegments field at all) deserializes with this backing field left null, despite
-    // the type system's guarantee. Self-heals to an empty list on first access rather than
-    // NPEing, which previously crashed every rateAt() call - and therefore the entire loop
-    // calculation cycle - for anyone with pre-existing persisted pump state.
     private var mutableSegmentsOrNull: MutableList<Segment>? = segments.toMutableList()
     private val mutableSegments: MutableList<Segment>
         get() = mutableSegmentsOrNull ?: mutableListOf<Segment>().also { mutableSegmentsOrNull = it }

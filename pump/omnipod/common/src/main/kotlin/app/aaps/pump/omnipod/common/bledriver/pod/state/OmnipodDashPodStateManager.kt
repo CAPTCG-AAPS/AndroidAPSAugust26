@@ -83,19 +83,6 @@ interface OmnipodDashPodStateManager {
     var basalProgram: BasalProgram?
     val activeCommand: ActiveCommand?
     val lastBolus: LastBolus?
-
-    /**
-     * [lastBolus] unless that record is a basal drift correction.
-     *
-     * Use this anywhere a bolus is surfaced to the user (pod overview, Nightscout device status) or
-     * where behaviour is gated on a bolus the user or the loop actually asked for. A 0.05 U drift
-     * correction is neither, and it is not in the treatment database either, so showing it as "last
-     * bolus" contradicts what AAPS itself reports.
-     *
-     * [lastBolus] stays the raw record, because the delivery machinery (pulse accounting, completion
-     * tracking, cancel) must still see the correction it is currently delivering.
-     */
-    val lastUserBolus: LastBolus?
     var suspendAlertsEnabled: Boolean
 
     fun increaseMessageSequenceNumber()
@@ -123,7 +110,7 @@ interface OmnipodDashPodStateManager {
     fun observeNoActiveCommand(): Completable
     fun getCommandConfirmationFromState(): CommandConfirmationFromState
 
-    fun createLastBolus(requestedUnits: Double, historyId: Long, bolusType: BS.Type, isBasalCorrection: Boolean = false)
+    fun createLastBolus(requestedUnits: Double, historyId: Long, bolusType: BS.Type)
     fun markLastBolusComplete(): LastBolus?
     fun onStart()
 
@@ -179,16 +166,7 @@ interface OmnipodDashPodStateManager {
         var bolusUnitsRemaining: Double,
         var deliveryComplete: Boolean,
         val historyId: Long,
-        val bolusType: BS.Type,
-        /**
-         * True when this record is a basal drift correction pulse rather than a bolus the user or the
-         * loop asked for. Corrections must not satisfy the zero-TBR exemption in
-         * [OmnipodDashPodStateManager.needsBasalCorrection] - see the comment there.
-         *
-         * Gson leaves this false when reading pod state written before the field existed, which keeps
-         * the previous behaviour for an already-stored bolus (treat it as a real one).
-         */
-        val isBasalCorrection: Boolean = false
+        val bolusType: BS.Type
     ) {
 
         fun deliveredUnits(): Double? {

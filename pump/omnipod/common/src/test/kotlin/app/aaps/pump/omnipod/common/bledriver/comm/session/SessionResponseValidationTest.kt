@@ -62,16 +62,13 @@ class SessionResponseValidationTest {
         val session = session()
         for ((request, response) in capturedPairs) {
             val sent = sequenceNumberOf(request)
-            // Pins the protocol rule itself, independent of the code under test.
             assertThat(sequenceNumberOf(response).toInt()).isEqualTo((sent.toInt() + 1) and 0x0f)
-            // Must not throw.
             session.validateSequenceNumber(lengthAndSequenceBytesOf(response), sent)
         }
     }
 
     @Test
     fun `a response echoing the request's own sequence number is rejected`() {
-        // The exact mistake the previous revision made: it treated this as the success case.
         val session = session()
         val (request, _) = capturedPairs.first()
         val sent = sequenceNumberOf(request)

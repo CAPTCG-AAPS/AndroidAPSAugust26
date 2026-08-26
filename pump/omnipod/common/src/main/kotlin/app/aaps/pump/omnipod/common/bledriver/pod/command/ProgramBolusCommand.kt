@@ -9,15 +9,6 @@ import app.aaps.pump.omnipod.common.bledriver.pod.util.MessageUtil
 import java.nio.ByteBuffer
 
 // NOT SUPPORTED: extended bolus
-//
-// Two wire formats exist for this command, both under commandType 0x17 - confirmed against
-// OmnipodKit's BolusExtraCommand.swift, whose own comment documents both explicitly:
-//   17 LL BO NNNN XXXXXXXX YYYY ZZZZZZZZ                (Eros/Dash - LL=0x0d, 13-byte body)
-//   17 LL BO NNNN XXXXXXXX YYYY ZZZZZZZZ BB MMMM CCCC   (O5 - LL=0x12, 18-byte body)
-// The O5 format has 5 mandatory extra trailing bytes (bolusSource/mealUnits/correctionUnits)
-// that Eros/Dash doesn't send - not optional metadata, a structurally different, longer
-// command. [o5BolusInfo] being null selects the original Dash/Eros format (still used by
-// OmnipodDashManagerImpl, which never sets it); non-null selects the O5 format.
 class ProgramBolusCommand private constructor(
     private val interlockCommand: ProgramInsulinCommand,
     uniqueId: Int,

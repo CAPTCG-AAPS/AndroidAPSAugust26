@@ -16,7 +16,7 @@ import app.aaps.pump.omnipod.common.bledriver.comm.message.MessageSendSuccess
 import app.aaps.pump.omnipod.common.bledriver.comm.message.MessageType
 import app.aaps.pump.omnipod.common.bledriver.comm.message.StringLengthPrefixEncoding
 import app.aaps.pump.omnipod.common.bledriver.comm.message.StringLengthPrefixEncoding.Companion.parseKeys
-import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5CertificateStore
+import app.aaps.pump.omnipod.common.bledriver.comm.pair.CommandSigner
 import app.aaps.pump.omnipod.common.bledriver.pod.command.base.Command
 import app.aaps.pump.omnipod.common.bledriver.pod.command.base.CommandType
 import app.aaps.pump.omnipod.common.bledriver.pod.response.AlarmStatusResponse
@@ -57,7 +57,7 @@ class Session(
      *  .legacy.session.O5Connection.establishSession]) - Dash has no certificate/ECDSA
      *  pairing infrastructure and never signs commands, so its `Connection
      *  .establishSession` leaves this at its default null. */
-    private val commandSigner: O5CertificateStore? = null
+    private val commandSigner: CommandSigner? = null
 ) {
 
     /** The 4-bit command-header sequence number (see [app.aaps.pump.omnipod.common
@@ -121,18 +121,6 @@ class Session(
         if (sendResult !is MessageSendSuccess) {
             return CommandAckError(response, "Could not ACK the response: $sendResult")
         }
-        // A NAK or alarm-status response is a well-formed, successfully-decoded reply, but it means
-        // the pod rejected the command or is in a fault state - not that the command succeeded. Every
-        // call site downstream (O5PumpPlugin's bolus/TBR/basal-program/deactivate commands) discards
-        // the actual Response object via .ignoreElements().blockingAwait() and only distinguishes
-        // success from failure by whether that Completable throws, so without this check a
-        // pod-rejected command silently completed as if it had been accepted. Still ACK it above (the
-        // pod is waiting for acknowledgement of receipt regardless of what it sent) - only the
-        // reported outcome changes here.
-        //
-        // The response travels with the error rather than being dropped - see
-        // [CommandReceiveError]. An alarm-status response *is* how a fault is reported, so
-        // discarding it here would throw away the pod's only notice that it has faulted.
         if (response is NakResponse || response is AlarmStatusResponse) {
             return CommandReceiveError("Pod rejected command or reported a fault: $response", response)
         }
@@ -145,16 +133,6 @@ class Session(
         val data = parseKeys(arrayOf(RESPONSE_PREFIX), decrypted.payload)[0]
         aapsLogger.info(LTag.PUMPBTCOMM, "Received decrypted response: ${data.toHex()} in packet: $decrypted")
 
-        // uniqueId is still not validated - matches OmnipodKit's own PodCommsSession.swift,
-        // which declares PodCommsError.invalidAddress but never actually throws it either.
-        //
-        // The trailing CRC and the embedded command sequence number are both validated, but
-        // O5-only (commandSigner != null - see this class's constructor doc), because only
-        // Omnipod 5 pods CRC their responses. Dash pods do not: their response trailer matches
-        // no CRC this code can compute, which is what OmnipodKit's own source means when it
-        // calls the pod-generated CRC's "algorithm is not understood". Enforcing it on a Dash
-        // connection would reject every response the pod ever sends. See [validateCrc] and
-        // [validateSequenceNumber] for the captured traffic each rule is pinned against.
         if (data.size < RESPONSE_ENVELOPE_MIN_SIZE) {
             aapsLogger.warn(LTag.PUMPBTCOMM, "Response envelope shorter than expected (${data.size} bytes): ${data.toHex()}")
         } else {

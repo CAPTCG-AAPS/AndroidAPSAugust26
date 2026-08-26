@@ -186,7 +186,10 @@
     <!-- Omnipod 5 -->
     <string name="omnipod_5_name">Omnipod 5</string>
     <string name="omnipod_5_name_short">O5</string>
+    <string name="omnipod_5_unconfirmed_command" comment="Reason shown when a status read is triggered to reconcile an unconfirmed command. 26 characters max for translation.">Unconfirmed command</string>
     <string name="omnipod_5_pump_description">Omnipod 5 patch pump, running as a manual pod under AAPS\'s control.</string>
+    <string name="omnipod_5_certificate_store">Certificate store</string>
+    <string name="omnipod_5_certificate_store_summary">Import and manage the Omnipod 5 pairing credential.</string>
     <string name="omnipod_5_error_not_enough_insulin">Not enough insulin left in the reservoir for this bolus.</string>
     <string name="omnipod_5_error_bolus_already_in_progress">A bolus is already in progress.</string>
     <string name="omnipod_5_error_setting_basal_profile_might_have_failed">Setting the new basal profile might have failed. Refresh pod status to confirm or deny this.</string>
@@ -195,9 +198,6 @@
     <string name="omnipod_5_error_setting_temp_basal_might_have_failed">Setting the temp basal might have failed. Refresh pod status to confirm or deny this.</string>
     <string name="omnipod_5_error_cancel_temp_basal_result_is_uncertain">Cancelling the temp basal result is uncertain. Refresh pod status to confirm or deny this.</string>
     <string name="omnipod_5_error_unresolved_dose_pending">An earlier dose could not be confirmed with the pod, so a new one was not sent. Refresh pod status once the pod is reachable again.</string>
-    <string name="omnipod_5_unconfirmed_command" comment="Shown as the reason for an automatic status read that reconciles a command the pod never confirmed. Keep short - appears in the command queue UI.">Unconfirmed command</string>
-    <string name="omnipod_5_certificate_store">Certificate store</string>
-    <string name="omnipod_5_certificate_store_summary">Import and review the Omnipod 5 registration credential</string>
     <string name="omnipod_5_error_extended_bolus_not_supported">Omnipod 5 driver does not support extended boluses</string>
     <string name="omnipod_5_error_tdd_not_supported">Omnipod 5 driver does not support TDD</string>
     <string name="omnipod_5_error_no_active_alerts">No active alerts</string>

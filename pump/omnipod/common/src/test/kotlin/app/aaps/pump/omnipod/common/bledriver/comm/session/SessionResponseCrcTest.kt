@@ -37,17 +37,17 @@ class SessionResponseCrcTest {
      * the direction that matters, since these are what the driver acts on.
      */
     private val podResponses = listOf(
-        "002a1c6e300a1d2803f04000001d83ff83db", // 0x1d status
-        "002a1c6e380a1d1803f06800001d83ff036a", // 0x1d status
-        "002a1c6e000a1d2803f07800001d83ff03eb", // 0x1d status
-        "002a1c6e301802160209020000010c92000000030d0cc8000000000070410258" // 0x02 version
+        "002a1c6e300a1d2803f04000001d83ff83db",
+        "002a1c6e380a1d1803f06800001d83ff036a",
+        "002a1c6e000a1d2803f07800001d83ff03eb",
+        "002a1c6e301802160209020000010c92000000030d0cc8000000000070410258"
     )
 
     /** Same pod, phone-generated. This driver builds these itself, so they close the loop. */
     private val outgoingMessages = listOf(
-        "002a1c6e2c030e0100802f", // 0x0e get status
-        "002a1c6e34071f05494e532e02818b", // 0x1f cancel delivery
-        "002a1c6e3c201a0e494e532e010091013840000c000c160e0000007d00dbba00007d00dbba008103" // 0x1a insulin schedule
+        "002a1c6e2c030e0100802f",
+        "002a1c6e34071f05494e532e02818b",
+        "002a1c6e3c201a0e494e532e010091013840000c000c160e0000007d00dbba00007d00dbba008103"
     )
 
     /**
@@ -65,7 +65,7 @@ class SessionResponseCrcTest {
     fun `real captured O5 pod responses all satisfy the envelope CRC`() {
         val session = session()
         for (message in podResponses) {
-            session.validateCrc(hex(message)) // must not throw
+            session.validateCrc(hex(message))
         }
     }
 
@@ -90,8 +90,6 @@ class SessionResponseCrcTest {
         val session = session()
         val original = hex(podResponses.first())
 
-        // Every byte is covered, including uniqueId and the length/sequence field - the CRC
-        // spans the whole envelope, so corruption in any of them must surface.
         for (index in 0 until original.size - 2) {
             val corrupted = original.copyOf()
             corrupted[index] = (corrupted[index].toInt() xor 0x01).toByte()
@@ -121,8 +119,8 @@ class SessionResponseCrcTest {
         val thrown = assertThrows(CouldNotParseResponseException::class.java) {
             session.validateCrc(corrupted)
         }
-        assertThat(thrown.message).contains("83db") // expected, from the intact envelope
-        assertThat(thrown.message).contains("8300") // what the corrupted envelope carries
+        assertThat(thrown.message).contains("83db")
+        assertThat(thrown.message).contains("8300")
     }
 
     /**

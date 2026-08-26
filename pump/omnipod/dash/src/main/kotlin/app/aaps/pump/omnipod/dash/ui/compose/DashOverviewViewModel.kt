@@ -474,8 +474,7 @@ class DashOverviewViewModel @Inject constructor(
                 return text to StatusLevel.CRITICAL
             }
         }
-        // lastUserBolus: a basal drift correction must not be shown as the user's last bolus.
-        podStateManager.lastUserBolus?.let {
+        podStateManager.lastBolus?.let {
             val bolusSize = it.deliveredUnits() ?: it.requestedUnits
             val text = ch.insulinAmountAgoString(
                 PumpInsulin(omnipodDashPumpPlugin.model().determineCorrectBolusSize(bolusSize)),

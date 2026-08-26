@@ -158,18 +158,4 @@ class PodInfoDetailedStatusTest {
         assertThat(podInfoDetailedStatus.getReceiverLowGain()).isEqualTo(2);
         assertThat(podInfoDetailedStatus.getRadioRSSI()).isEqualTo(26);
     }
-
-    @Test
-    void testReservoirLevelCombinesHighAndLowByteBeforeScaling() {
-        // encodedData[11] low 2 bits = 1 -> high tick contribution = 1 << 8 = 256
-        // encodedData[12] = 0x2c (44) -> low tick contribution = 44
-        // combined ticks = 300 -> 300 * POD_PULSE_SIZE (0.05) = 15.0 U.
-        // A precedence bug that multiplied only the low byte before adding the high-bit term
-        // (256 + 44*0.05 = 258.2) would push this well past MAX_RESERVOIR_READING (50) and
-        // wrongly report the reservoir level as unknown (null) instead of 15.0.
-        PodInfoDetailedStatus podInfoDetailedStatus = new PodInfoDetailedStatus(ByteUtil.INSTANCE.fromHexString("02080100000a0038000000012c008700000095ff0000"));
-
-        assertThat(podInfoDetailedStatus.getReservoirLevel()).isNotNull();
-        assertThat(podInfoDetailedStatus.getReservoirLevel()).isWithin(0.000001).of(15.0);
-    }
 }

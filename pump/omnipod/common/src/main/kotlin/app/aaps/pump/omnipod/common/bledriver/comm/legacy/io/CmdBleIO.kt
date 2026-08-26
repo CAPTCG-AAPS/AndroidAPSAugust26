@@ -40,24 +40,13 @@ class CmdBleIO(
     override fun hello() = hello(OmnipodDashBleManagerImpl.CONTROLLER_ID)
 
     /**
-     * Announces [controllerId] in the CMD 'hello' handshake, instead of Dash's hardcoded
-     * [OmnipodDashBleManagerImpl.CONTROLLER_ID].
-     *
-     * O5 identifies with the certificate-derived controller id from the imported credentials,
-     * and the id announced here has to be that same one. OmnipodKit threads a single `myId`
-     * through `sendHello(myId:)`, the pairing `Ids`, and `O5CertificateStore(controllerId:)` -
-     * it has no separate constant for this handshake - and a successful real-pod capture shows
-     * it announcing that id (`myId 0x2A098C`).
-     *
-     * The no-arg [hello] keeps the Dash id, which is correct for Dash.
+     * O5 sends its own certificate-derived controller id here (not the Dash
+     * [OmnipodDashBleManagerImpl.CONTROLLER_ID]). The id announced in this handshake must
+     * match the source id used later in the pairing messages (SP1/SP2), or the pod aborts
+     * the pairing.
      */
     fun hello(controllerId: Int) = sendAndConfirmPacket(BleCommandHello(controllerId).data)
 
-    // OmnipodKit's PeripheralManager.waitForCommand(): the pod can send an intermediate
-    // PAIR_STATUS command on this same characteristic while it's still preparing the
-    // actually-expected response (observed during O5 pairing) - looping past it here,
-    // within the same overall deadline, matches that behavior instead of treating it as
-    // a mismatch and giving up early.
     override fun expectCommandType(expected: BleCommand, timeoutMs: Long): BleConfirmResult {
         val deadlineMs = SystemClock.elapsedRealtime() + timeoutMs
         while (true) {
@@ -78,7 +67,6 @@ class CmdBleIO(
                         LTag.PUMPBTCOMM,
                         "expectCommandType: skipping intermediate PAIR_STATUS while waiting for $expected"
                     )
-                    // loop, still bounded by the same deadline
                 }
 
                 else                                                     ->

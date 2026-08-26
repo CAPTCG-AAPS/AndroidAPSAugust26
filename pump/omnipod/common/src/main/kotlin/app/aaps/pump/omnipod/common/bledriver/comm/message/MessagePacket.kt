@@ -20,12 +20,8 @@ data class MessagePacket(
     val priority: Boolean = false,
     val lastMessage: Boolean = false,
     val gateway: Boolean = false,
-    // Confirmed against OmnipodKit's own Bluetooth/MessagePacket.swift: these two flags carry
-    // the exact same "TODO: understand, seems to always be true/false" comments there too -
-    // this isn't a gap specific to this port, it's an open question in the reference
-    // implementation itself. No wire trace or spec has surfaced what sas/tfs actually mean.
-    val sas: Boolean = true,
-    val tfs: Boolean = false,
+    val sas: Boolean = true, // TODO: understand, seems to always be true
+    val tfs: Boolean = false, // TODO: understand, seems to be false
     val version: Short = 0.toShort(),
     /** O5-only: raw (r||s, 64-byte) P-256 ECDSA signature for [MessageType.ENCRYPTED_SIGNED]
      *  messages - set only after [payload] has already been AES-CCM encrypted (see

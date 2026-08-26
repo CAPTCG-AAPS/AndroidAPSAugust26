@@ -12,10 +12,6 @@ class AlertConfigurationTest {
 
     @Test
     fun `encodes a TimerTrigger alert with all flag bits set`() {
-        // type=LOW_RESERVOIR(4): 4<<4=0x40; enabled: |0x08; TimerTrigger (not reservoir):
-        // no |0x04; autoOff: |0x02; duration=300=0b1_00101100, high bit=1: |0x01 -> 0x4B.
-        // durationInMinutes low byte: 300 & 0xFF = 0x2C. trigger.offsetInMinutes=500=0x01F4.
-        // beepRepetition=XXX(0x01), beepType=FOUR_TIMES_BIP_BEEP(0x02).
         val config = AlertConfiguration(
             type = AlertType.LOW_RESERVOIR,
             enabled = true,
@@ -33,10 +29,6 @@ class AlertConfigurationTest {
 
     @Test
     fun `encodes a ReservoirVolumeTrigger alert with all flag bits clear`() {
-        // type=EXPIRATION(7): 7<<4=0x70; disabled: no |0x08; ReservoirVolumeTrigger:
-        // |0x04 -> 0x74; autoOff=false: no |0x02; duration=0: no |0x01.
-        // trigger.thresholdInMicroLiters=1000=0x03E8.
-        // beepRepetition=EVERY_MINUTE_AND_EVERY_15_MIN(0x03), beepType=SILENT(0x00).
         val config = AlertConfiguration(
             type = AlertType.EXPIRATION,
             enabled = false,

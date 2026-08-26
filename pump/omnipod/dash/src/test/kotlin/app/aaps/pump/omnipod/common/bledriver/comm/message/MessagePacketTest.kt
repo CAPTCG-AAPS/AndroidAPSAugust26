@@ -48,49 +48,4 @@ class MessagePacketTest {
         )
         assertThat(msg.asByteArray().toHex()).isEqualTo(payload)
     }
-
-    @Test fun testParseDecodesTypeFromF2NotF1() {
-        // Regression test: parse() previously decoded `type` from f1 (payload[2]) instead of
-        // f2 (payload[3]) - the same byte/bits used for eqos - even though asByteArray()
-        // correctly writes type into f2. This was masked in testParseMessagePacket above
-        // purely by coincidence: that packet's eqos(1) and tfs(false) happen to numerically
-        // produce the same 4-bit value as type=ENCRYPTED(1). Using eqos=5 (distinct from
-        // type=PAIRING=3) here makes the two unambiguous - the old code would decode type=13
-        // (eqos's 3 bits shl-adjusted, or'd with tfs) and throw "Unknown MessageType: 13".
-        val msg = MessagePacket(
-            type = MessageType.PAIRING,
-            source = Id.fromLong(1),
-            destination = Id.fromLong(2),
-            sequenceNumber = 1.toByte(),
-            eqos = 5.toShort(),
-            tfs = true,
-            payload = ByteArray(4) { it.toByte() }
-        )
-
-        val parsed = MessagePacket.parse(msg.asByteArray())
-
-        assertThat(parsed.type).isEqualTo(MessageType.PAIRING)
-        assertThat(parsed.eqos).isEqualTo(5.toShort())
-    }
-
-    @Test fun testEncryptedSignedRoundTripAccountsForTagLikeEncrypted() {
-        // Regression test: MessagePacket previously only checked type == ENCRYPTED for the
-        // 8-byte MAC-tag size adjustment in both asByteArray() and parse() - Swift checks
-        // both ENCRYPTED and ENCRYPTED_SIGNED. Not yet reachable via any caller in this
-        // codebase (no signed-command layer built yet), but pins the wire-format math
-        // correctly for whenever one exists, mirroring the ENCRYPTED-type coverage above.
-        val fullPayload = ByteArray(20) { it.toByte() } // ciphertext + 8-byte tag
-        val msg = MessagePacket(
-            type = MessageType.ENCRYPTED_SIGNED,
-            source = Id.fromLong(1),
-            destination = Id.fromLong(2),
-            sequenceNumber = 1.toByte(),
-            payload = fullPayload
-        )
-
-        val parsed = MessagePacket.parse(msg.asByteArray())
-
-        assertThat(parsed.type).isEqualTo(MessageType.ENCRYPTED_SIGNED)
-        assertThat(parsed.payload).isEqualTo(fullPayload)
-    }
 }

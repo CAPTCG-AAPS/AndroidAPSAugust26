@@ -18,7 +18,7 @@ class Ids private constructor(val myId: Id, val podId: Id) {
     constructor(podState: OmnipodDashPodStateManager) : this(
         myId = Id.fromInt(OmnipodDashBleManagerImpl.CONTROLLER_ID),
         podId = podState.uniqueId?.let(Id::fromLong)
-            ?: Id.fromInt(OmnipodDashBleManagerImpl.CONTROLLER_ID).increment() // pod not activated
+            ?: Id.fromInt(OmnipodDashBleManagerImpl.CONTROLLER_ID).increment()
     )
 
     companion object {

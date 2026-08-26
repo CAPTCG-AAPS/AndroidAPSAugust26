@@ -229,10 +229,6 @@ class OmnipodDashPodStateManagerImpl @Inject constructor(
         @Synchronized
         get() = podState.lastBolus
 
-    override val lastUserBolus: OmnipodDashPodStateManager.LastBolus?
-        @Synchronized
-        get() = podState.lastBolus?.takeIf { !it.isBasalCorrection }
-
     override val tempBasalActive: Boolean
         get() = !isSuspended && tempBasal?.let {
             it.startTime + it.durationInMinutes * 60 * 1000 > System.currentTimeMillis()
@@ -390,15 +386,9 @@ class OmnipodDashPodStateManagerImpl @Inject constructor(
         }
 
         // Safety check: don't correct when TBR = 0 (algorithm explicitly requested zero insulin)
-        // Except zero temp due to bolus delivery, allow corrections in that case.
-        //
-        // Only a bolus the user or the loop asked for opens this window. A correction is itself filed
-        // as a SET_BOLUS, so without the isBasalCorrection filter it would become `lastBolus` and
-        // refresh the 5-minute window that permits the NEXT correction. That leaves the 2-minute
-        // cooldown as the only limiter and allows 0.05 U every 2 min (1.5 U/h) to go in against a zero
-        // TBR - exactly when the algorithm asked for nothing.
+        // Except zero temp due to bolus delivery, allow corrections in that case
         if (tempBasal?.rate == 0.0) {
-            val timeSinceLastBolus = lastUserBolus?.let { System.currentTimeMillis() - it.startTime }
+            val timeSinceLastBolus = podState.lastBolus?.startTime?.let { System.currentTimeMillis() - it }
             if (timeSinceLastBolus == null || timeSinceLastBolus >= 5 * 60 * 1000L) {
                 return false
             }
@@ -512,15 +502,14 @@ class OmnipodDashPodStateManagerImpl @Inject constructor(
         get() = podState.activeCommand
 
     @Synchronized
-    override fun createLastBolus(requestedUnits: Double, historyId: Long, bolusType: BS.Type, isBasalCorrection: Boolean) {
+    override fun createLastBolus(requestedUnits: Double, historyId: Long, bolusType: BS.Type) {
         podState.lastBolus = OmnipodDashPodStateManager.LastBolus(
             startTime = System.currentTimeMillis(),
             requestedUnits = requestedUnits,
             bolusUnitsRemaining = requestedUnits,
             deliveryComplete = false, // cancelled, delivered 100% or pod failure
             historyId = historyId,
-            bolusType = bolusType,
-            isBasalCorrection = isBasalCorrection
+            bolusType = bolusType
         )
     }
 

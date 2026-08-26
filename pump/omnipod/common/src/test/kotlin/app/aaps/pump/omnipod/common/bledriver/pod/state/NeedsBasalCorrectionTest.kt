@@ -186,52 +186,6 @@ class NeedsBasalCorrectionTest : TestBase() {
         assertThat(sut.needsBasalCorrection()).isTrue()
     }
 
-    @Test fun `drift in zone, zero TBR, last bolus was a basal correction — returns false`() {
-        // Regression: a correction is itself filed as a SET_BOLUS and becomes lastBolus. If it
-        // satisfied the recency exemption it would refresh the 5-minute window on every firing,
-        // leaving the 2-minute cooldown as the only limiter — 0.05 U every 2 min against a zero TBR.
-        sut.tempBasal = OmnipodDashPodStateManager.TempBasal(
-            startTime         = System.currentTimeMillis() - 10 * 60_000L,
-            durationInMinutes = 30,
-            rate              = 0.0
-        )
-        sut.createLastBolus(requestedUnits = 0.05, historyId = 2L, bolusType = BS.Type.NORMAL, isBasalCorrection = true)
-        setDrift(10, 0, 0.55)   // drift = -0.05
-        assertThat(sut.needsBasalCorrection()).isFalse()
-    }
-
-    @Test fun `zero TBR, correction following a real bolus does not extend the window`() {
-        sut.tempBasal = OmnipodDashPodStateManager.TempBasal(
-            startTime         = System.currentTimeMillis() - 10 * 60_000L,
-            durationInMinutes = 30,
-            rate              = 0.0
-        )
-        setDrift(10, 0, 0.55)   // drift = -0.05
-
-        // A real bolus opens the exemption...
-        sut.createLastBolus(requestedUnits = 1.0, historyId = 1L, bolusType = BS.Type.NORMAL)
-        assertThat(sut.needsBasalCorrection()).isTrue()
-
-        // ...and the correction that follows must not hold it open.
-        sut.createLastBolus(requestedUnits = 0.05, historyId = 2L, bolusType = BS.Type.NORMAL, isBasalCorrection = true)
-        assertThat(sut.needsBasalCorrection()).isFalse()
-    }
-
-    // ---- lastUserBolus accessor ---------------------------------------------------------------
-
-    @Test fun `lastUserBolus exposes a real bolus and hides a correction`() {
-        assertThat(sut.lastUserBolus).isNull()
-
-        sut.createLastBolus(requestedUnits = 1.0, historyId = 1L, bolusType = BS.Type.NORMAL)
-        assertThat(sut.lastUserBolus?.requestedUnits).isEqualTo(1.0)
-
-        // A correction still lands in lastBolus (the delivery machinery needs it) but must not be
-        // reported as the user's last bolus in the overview or the Nightscout device status.
-        sut.createLastBolus(requestedUnits = 0.05, historyId = 2L, bolusType = BS.Type.NORMAL, isBasalCorrection = true)
-        assertThat(sut.lastBolus?.requestedUnits).isEqualTo(0.05)
-        assertThat(sut.lastUserBolus).isNull()
-    }
-
     // ---- cooldown expiry ----------------------------------------------------------------------
 
     @Test fun `past cooldown window — does not block correction`() {

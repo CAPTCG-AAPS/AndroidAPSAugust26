@@ -57,12 +57,8 @@ public class PodInfoDetailedStatus extends PodInfo implements StatusUpdatableRes
             faultEventTime = Duration.standardMinutes(minutesSinceActivation);
         }
 
-        // Java's * binds tighter than +, so without the outer parens only the low byte was being
-        // multiplied by POD_PULSE_SIZE while the high-bit tick contribution (0/256/512/768) was left
-        // as a raw integer and added afterward - see StatusResponse's equivalent field for the
-        // correctly-parenthesized formula this was supposed to match. That inflated reservoirValue
-        // past MAX_RESERVOIR_READING for essentially the entire pod life above ~12.8U remaining,
-        // reporting reservoirLevel as null (unknown) instead of the actual reading.
+        // Both bytes form the pulse count, so the addition has to happen before the multiply -
+        // without the outer parentheses the high byte goes in unscaled and the reservoir reads low.
         double reservoirValue = (((encodedData[11] & 0x03) << 8) +
                 ByteUtil.INSTANCE.convertUnsignedByteToInt(encodedData[12])) * OmnipodConstants.POD_PULSE_SIZE;
         if (reservoirValue > OmnipodConstants.MAX_RESERVOIR_READING) {

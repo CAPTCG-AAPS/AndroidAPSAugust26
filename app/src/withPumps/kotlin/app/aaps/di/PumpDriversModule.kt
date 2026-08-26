@@ -8,7 +8,7 @@ import app.aaps.pump.equil.di.EquilModule
 import app.aaps.pump.insight.di.InsightModule
 import app.aaps.pump.medtronic.di.MedtronicModule
 import app.aaps.pump.medtrum.di.MedtrumModule
-import app.aaps.pump.omnipod.common.di.O5Module
+import app.aaps.pump.omnipod.omnipod5.di.O5Module
 import app.aaps.pump.omnipod.dash.di.OmnipodDashModule
 import app.aaps.pump.omnipod.eros.di.OmnipodErosModule
 import dagger.Module

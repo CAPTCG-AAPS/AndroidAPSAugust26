@@ -27,7 +27,6 @@ import java.util.EnumSet
  */
 class CommandEncodingTest : TestBase() {
 
-    // -- GetVersionCommand ---------------------------------------------------------------------
 
     @Test
     fun `GetVersionCommand encodes to the documented 14-byte layout`() {
@@ -40,7 +39,6 @@ class CommandEncodingTest : TestBase() {
 
         val encoded = cmd.encoded
 
-        // HEADER_LENGTH(6) + LENGTH(6: type+bodyLen+uniqueId) + CRC(2) = 14 bytes
         assertThat(encoded.size).isEqualTo(14)
 
         val headerUniqueId = readInt(encoded, 0)
@@ -61,7 +59,6 @@ class CommandEncodingTest : TestBase() {
         assertThat(cmd1.encoded).isNotEqualTo(cmd2.encoded)
     }
 
-    // -- GetStatusCommand -----------------------------------------------------------------------
 
     @Test
     fun `GetStatusCommand encodes to the documented 11-byte layout`() {
@@ -76,7 +73,6 @@ class CommandEncodingTest : TestBase() {
 
         val encoded = cmd.encoded
 
-        // HEADER_LENGTH(6) + LENGTH(3: type+bodyLen+statusResponseType) + CRC(2) = 11 bytes
         assertThat(encoded.size).isEqualTo(11)
         assertThat(encoded[8]).isEqualTo(ResponseType.StatusResponseType.DEFAULT_STATUS_RESPONSE.value)
 
@@ -101,7 +97,6 @@ class CommandEncodingTest : TestBase() {
         assertThat(alarmPage.encoded[8]).isEqualTo(ResponseType.StatusResponseType.ALARM_STATUS.value)
     }
 
-    // -- SilenceAlertsCommand -------------------------------------------------------------------
 
     @Test
     fun `SilenceAlertsCommand encodes to the documented 15-byte layout`() {
@@ -119,7 +114,6 @@ class CommandEncodingTest : TestBase() {
 
         val encoded = cmd.encoded
 
-        // HEADER_LENGTH(6) + LENGTH(7: type+bodyLen+nonce(4)+alertByte(1)) + CRC(2) = 15 bytes
         assertThat(encoded.size).isEqualTo(15)
 
         val encodedNonce = readInt(encoded, 8)
@@ -156,7 +150,6 @@ class CommandEncodingTest : TestBase() {
         assertThat(AlertUtil.decodeAlertSet(cmd.encoded[12])).isEmpty()
     }
 
-    // -- DeactivateCommand ----------------------------------------------------------------------
 
     @Test
     fun `DeactivateCommand encodes to the documented 14-byte layout`() {
@@ -172,9 +165,8 @@ class CommandEncodingTest : TestBase() {
 
         val encoded = cmd.encoded
 
-        // HEADER_LENGTH(6) + LENGTH(6: type+bodyLen+nonce(4)) + CRC(2) = 14 bytes
         assertThat(encoded.size).isEqualTo(14)
-        assertThat(encoded[6]).isEqualTo(0x1c.toByte()) // CommandType.DEACTIVATE
+        assertThat(encoded[6]).isEqualTo(0x1c.toByte())
 
         val encodedNonce = readInt(encoded, 8)
         assertThat(encodedNonce).isEqualTo(nonce)
@@ -191,7 +183,6 @@ class CommandEncodingTest : TestBase() {
         assertThat(cmd1.encoded).isNotEqualTo(cmd2.encoded)
     }
 
-    // -- StopDeliveryCommand --------------------------------------------------------------------
 
     @Test
     fun `StopDeliveryCommand encodes ALL plus LONG_SINGLE_BEEP to the documented 15-byte layout`() {
@@ -209,15 +200,12 @@ class CommandEncodingTest : TestBase() {
 
         val encoded = cmd.encoded
 
-        // HEADER_LENGTH(6) + LENGTH(7: type+bodyLen+nonce(4)+deliveryTypeByte(1)) + CRC(2) = 15 bytes
         assertThat(encoded.size).isEqualTo(15)
-        assertThat(encoded[6]).isEqualTo(0x1f.toByte()) // CommandType.STOP_DELIVERY
+        assertThat(encoded[6]).isEqualTo(0x1f.toByte())
 
         val encodedNonce = readInt(encoded, 8)
         assertThat(encodedNonce).isEqualTo(nonce)
 
-        // DeliveryType.ALL -> bits {basal,tempBasal,bolus} all set -> 0x07;
-        // BeepType.LONG_SINGLE_BEEP = 0x06 in the high nibble -> combined 0x67
         assertThat(encoded[12]).isEqualTo(0x67.toByte())
 
         assertCrcMatches(encoded, crcOffset = 13)
@@ -237,15 +225,10 @@ class CommandEncodingTest : TestBase() {
             .setDeliveryType(StopDeliveryCommand.DeliveryType.BASAL).setBeepType(BeepType.SILENT)
             .build()
 
-        // BASAL only -> bit0 set -> 0x01; BeepType.SILENT = 0x00 in high nibble -> combined 0x01
         assertThat(basalOnlyCmd.encoded[12]).isEqualTo(0x01.toByte())
         assertThat(allCmd.encoded).isNotEqualTo(basalOnlyCmd.encoded)
     }
 
-    // -- ProgramAlertsCommand -------------------------------------------------------------------
-    //
-    // Configures WHEN the pod's own alert system should fire (a timer offset or reservoir
-    // volume threshold, plus beep pattern) - no insulin delivery amount is computed here.
 
     @Test
     fun `ProgramAlertsCommand encodes a single AlertConfiguration to the documented 20-byte layout`() {
@@ -272,29 +255,22 @@ class CommandEncodingTest : TestBase() {
 
         val encoded = cmd.encoded
 
-        // HEADER(6) + [type(1)+bodyLen(1)+nonce(4)+alertConfig(6)] + CRC(2) = 20 bytes
         assertThat(encoded.size).isEqualTo(20)
-        assertThat(encoded[6]).isEqualTo(0x19.toByte()) // CommandType.PROGRAM_ALERTS
-        assertThat(encoded[7]).isEqualTo(10.toByte())   // bodyLength = 1*6+4
+        assertThat(encoded[6]).isEqualTo(0x19.toByte())
+        assertThat(encoded[7]).isEqualTo(10.toByte())
 
         assertThat(readInt(encoded, 8)).isEqualTo(nonce)
 
-        // AlertConfiguration bytes at offset 12: firstByte = (type.index<<4=0x60) | enabled(bit3) = 0x68
         assertThat(encoded[12]).isEqualTo(0x68.toByte())
-        assertThat(encoded[13]).isEqualTo(0.toByte()) // durationInMinutes
-        assertThat(encoded[14]).isEqualTo(0.toByte()) // offsetInMinutes high byte
-        assertThat(encoded[15]).isEqualTo(20.toByte()) // offsetInMinutes low byte
+        assertThat(encoded[13]).isEqualTo(0.toByte())
+        assertThat(encoded[14]).isEqualTo(0.toByte())
+        assertThat(encoded[15]).isEqualTo(20.toByte())
         assertThat(encoded[16]).isEqualTo(BeepRepetitionType.EVERY_MINUTE_AND_EVERY_15_MIN.value)
         assertThat(encoded[17]).isEqualTo(BeepType.FOUR_TIMES_BIP_BEEP.value)
 
         assertCrcMatches(encoded, crcOffset = 18)
     }
 
-    // -- SuspendDeliveryCommand -----------------------------------------------------------------
-    //
-    // Composes StopDelivery(ALL) with an embedded, fixed ProgramAlerts(SUSPEND_ENDED) command -
-    // still no delivery-rate computation anywhere; it's a fixed "stop everything and arm one
-    // specific alert" sequence.
 
     @Test
     fun `SuspendDeliveryCommand composes StopDelivery ALL plus embedded ProgramAlerts correctly`() {
@@ -311,29 +287,21 @@ class CommandEncodingTest : TestBase() {
 
         val encoded = cmd.encoded
 
-        // HEADER(6) + [type+bodyLen+nonce(4)+deliveryTypeByte(1)](7) + embeddedProgramAlerts(12) + CRC(2) = 27 bytes
         assertThat(encoded.size).isEqualTo(27)
-        assertThat(encoded[6]).isEqualTo(0x1f.toByte()) // CommandType.STOP_DELIVERY
+        assertThat(encoded[6]).isEqualTo(0x1f.toByte())
 
         assertThat(readInt(encoded, 8)).isEqualTo(nonce)
 
-        // byte 12: (beepType.value<<4) | DeliveryType.ALL bits(0x07) = (0x06<<4)|0x07 = 0x67
         assertThat(encoded[12]).isEqualTo(0x67.toByte())
 
-        // Embedded ProgramAlertsCommand starts at offset 13: type(0x19), bodyLen(10), nonce(4), alertConfig(6)
         assertThat(encoded[13]).isEqualTo(0x19.toByte())
         assertThat(encoded[14]).isEqualTo(10.toByte())
-        assertThat(readInt(encoded, 15)).isEqualTo(nonce) // embedded nonce matches outer nonce
-        assertThat(encoded[19]).isEqualTo(0x68.toByte())  // embedded alertConfig firstByte (SUSPEND_ENDED, enabled)
+        assertThat(readInt(encoded, 15)).isEqualTo(nonce)
+        assertThat(encoded[19]).isEqualTo(0x68.toByte())
 
         assertCrcMatches(encoded, crcOffset = 25)
     }
 
-    // -- SetUniqueIdCommand ---------------------------------------------------------------------
-    //
-    // Assigns the pod's address during activation. No dosing math - purely identity/timestamp
-    // assignment. Notably, the message HEADER uses a placeholder address (the pod has no real
-    // address to address it BY yet), while the BODY carries the real address being assigned.
 
     @Test
     fun `SetUniqueIdCommand encodes to the documented 29-byte layout`() {
@@ -355,24 +323,20 @@ class CommandEncodingTest : TestBase() {
 
         val encoded = cmd.encoded
 
-        // HEADER(6) + [type+bodyLen+uniqueId(4)+0x14+0x04+initTime(5)+lotNumber(4)+podSeqNum(4)](21) + CRC(2) = 29
         assertThat(encoded.size).isEqualTo(29)
 
-        // Header address (bytes 0-3) is the placeholder 0xFFFFFFFF, not the target uniqueId.
         assertThat(readInt(encoded, 0)).isEqualTo(-1)
 
-        assertThat(encoded[6]).isEqualTo(0x03.toByte()) // CommandType.SET_UNIQUE_ID
+        assertThat(encoded[6]).isEqualTo(0x03.toByte())
 
-        // Body (bytes 8-11) carries the REAL target uniqueId being assigned.
         assertThat(readInt(encoded, 8)).isEqualTo(targetUniqueId)
 
         assertThat(encoded[12]).isEqualTo(0x14.toByte())
         assertThat(encoded[13]).isEqualTo(0x04.toByte())
 
-        // Initialization time: month, day, year%100, hour, minute
-        assertThat(encoded[14]).isEqualTo(3.toByte())  // March
+        assertThat(encoded[14]).isEqualTo(3.toByte())
         assertThat(encoded[15]).isEqualTo(15.toByte())
-        assertThat(encoded[16]).isEqualTo(24.toByte()) // 2024 % 100
+        assertThat(encoded[16]).isEqualTo(24.toByte())
         assertThat(encoded[17]).isEqualTo(10.toByte())
         assertThat(encoded[18]).isEqualTo(30.toByte())
 
@@ -382,7 +346,6 @@ class CommandEncodingTest : TestBase() {
         assertCrcMatches(encoded, crcOffset = 27)
     }
 
-    // -- shared helpers --------------------------------------------------------------------------
 
     private fun readInt(bytes: ByteArray, offset: Int): Int =
         ((bytes[offset].toInt() and 0xFF) shl 24) or

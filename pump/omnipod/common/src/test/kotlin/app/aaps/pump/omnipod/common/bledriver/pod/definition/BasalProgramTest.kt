@@ -27,29 +27,29 @@ class BasalProgramTest {
     fun `rateAt returns the rate of the segment covering that half-hour slot`() {
         val program = BasalProgram(
             listOf(
-                BasalProgram.Segment(0, 24, 100), // midnight - noon: 1.00 U/hr
-                BasalProgram.Segment(24, 48, 150) // noon - midnight: 1.50 U/hr
+                BasalProgram.Segment(0, 24, 100),
+                BasalProgram.Segment(24, 48, 150)
             )
         )
 
-        assertThat(program.rateAt(millisAt(10, 15))).isEqualTo(1.0) // slot 20, in [0,24)
-        assertThat(program.rateAt(millisAt(14, 45))).isEqualTo(1.5) // slot 29, in [24,48)
+        assertThat(program.rateAt(millisAt(10, 15))).isEqualTo(1.0)
+        assertThat(program.rateAt(millisAt(14, 45))).isEqualTo(1.5)
     }
 
     @Test
     fun `rateAt treats startSlotIndex as inclusive and endSlotIndex as exclusive`() {
         val program = BasalProgram(listOf(BasalProgram.Segment(20, 22, 200)))
 
-        assertThat(program.rateAt(millisAt(10, 0))).isEqualTo(2.0) // slot 20 (10:00) - included (start, inclusive)
-        assertThat(program.rateAt(millisAt(10, 29))).isEqualTo(2.0) // slot 20 (10:29) - included
-        assertThat(program.rateAt(millisAt(11, 0))).isEqualTo(0.0) // slot 22 (11:00) - excluded (end, exclusive)
+        assertThat(program.rateAt(millisAt(10, 0))).isEqualTo(2.0)
+        assertThat(program.rateAt(millisAt(10, 29))).isEqualTo(2.0)
+        assertThat(program.rateAt(millisAt(11, 0))).isEqualTo(0.0)
     }
 
     @Test
     fun `rateAt returns zero when no segment covers the slot`() {
         val program = BasalProgram(listOf(BasalProgram.Segment(0, 10, 100)))
 
-        assertThat(program.rateAt(millisAt(23, 0))).isEqualTo(0.0) // slot 46, uncovered
+        assertThat(program.rateAt(millisAt(23, 0))).isEqualTo(0.0)
     }
 
     @Test
@@ -82,7 +82,6 @@ class BasalProgramTest {
 
     @Test
     fun `Segment getPulsesPerHour converts hundredth-units-per-hour to pulses using the 0-05U pulse size`() {
-        // 1.00 U/hr = 100 hundredth-units -> 20 pulses/hr at 0.05 U/pulse.
         val segment = BasalProgram.Segment(0, 48, 100)
 
         assertThat(segment.getPulsesPerHour()).isEqualTo(20.toShort())
@@ -108,15 +107,6 @@ class BasalProgramTest {
 
     @Test
     fun `segments self-heals instead of crashing when Gson deserialization bypasses the constructor`() {
-        // Reproduces a real production crash: Gson deserializes persisted BasalProgram
-        // instances (from OmnipodDashPodStateManagerImpl/PersistedO5PodStateManager's
-        // SharedPreferences blobs) via reflection, which allocates the object and sets
-        // fields directly WITHOUT ever calling this constructor. A BasalProgram whose JSON
-        // doesn't populate mutableSegmentsOrNull - e.g. persisted under an older field
-        // layout - previously came back with that field genuinely null despite the type
-        // system's guarantee, and every subsequent .segments/.rateAt() access threw
-        // Collections.unmodifiableList(null) -> NPE, crashing AAPS's entire loop
-        // calculation cycle (PostCalculationWorker) for anyone with pre-existing pump state.
         val deserialized = Gson().fromJson("{}", BasalProgram::class.java)
 
         assertThat(deserialized.segments).isEmpty()

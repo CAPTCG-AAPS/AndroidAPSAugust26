@@ -12,9 +12,6 @@ class PayloadSplitter(private val payload: ByteArray, private val layout: BlePac
         val ret = ArrayList<BlePacket>()
         val crc32 = payload.crc32()
         val middleFragments = (payload.size - layout.firstPacketCapacityWithMiddlePackets) / layout.middlePacketCapacity
-        // Kept as an Int (not Byte) throughout - for O5's larger payloads this can exceed
-        // 127, and Kotlin's signed Byte would sign-extend on every comparison/arithmetic
-        // use below. Only truncated to Byte where it's actually written to the wire.
         val rest =
             (payload.size - middleFragments * layout.middlePacketCapacity) -
                 layout.firstPacketCapacityWithMiddlePackets
