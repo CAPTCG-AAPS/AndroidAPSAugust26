@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tandem - t:Mobi Base -->
+    <string name="tandem_name_mobi" translatable="false">Tandem Mobi</string>
+    <string name="tandem_name_mobi_short" translatable="false">Mobi</string>
+    <string name="description_pump_tandem_mobi">Pump integration for Tandem Mobi</string>
+    <string name="tandem_mobi_pump_settings">Mobi Pump Settings</string>
+
+    <!-- Tandem - t:slim Base -->
+    <string name="tandem_name_slim" translatable="false">t:slim X2</string>
+    <string name="tandem_name_slim_short" translatable="false">t:slim</string>
+    <string name="description_pump_tandem_slim">Pump integration for Tandem t:slim with version 2.2 (and higher) you can use Closed Loop, all other modules are Open Loop only.</string>
+
+    <!-- Overview -->
+    <string name="pump_refresh">Refresh</string>
+    <string name="pump_driver_errors">Driver Errors</string>
+    <string name="pump_status_label">Pump Status</string>
+    <string name="pump_firmware_label">Pump Firmware</string>
+    <string name="pump_address_label">BT Address</string>
+    <string name="pump_last_bolus" translatable="false">%1$.2f %2$s (%3$s)</string>
+    <string name="pump_firmware_open_loop_only">%s (Open-Loop only)</string>
+    <string name="pump_firmware_demo">Ignored. Demo mode</string>
+    <string name="pump_actions">Actions</string>
+    <string name="pump_data">Data</string>
+    <string name="driver_version">Driver Version</string>
+    <string name="pump_serial_number">Serial Number</string>
+    <string name="pump_bt_state_label">BT State</string>
+    <string name="pump_last_event">Last Pump Event</string>
+    <string name="pump_data_status">Pump Data:</string>
+    <string name="pump_data_status_notification">NOTIFICATIONS</string>
+    <string name="pump_data_status_events" comment="Prefix string with as many of \u00A0 to make it appear in middle of pump overview screen">\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0EVENTS</string>
+    <string name="pump_data_status_history">HISTORY</string>
+
+    <string name="pump_state_unknown_in_overview">Unknown pump state (initial connection not yet established)</string>
+    <string name="pump_state_suspended_in_overview">Pump is Suspended (by User Actions or Mobi itself)</string>
+
+
+    <!-- Errors -->
+    <string name="tandem_error_not_bonded">Pump not configured or fully bonded</string>
+    <string name="tandem_error_problem_with_request">Pump reset connection, wrong/invalid command was sent</string>
+    <string name="tandem_error_pump_critical_error">Pump Critical Error: %s</string>
+    <string name="tandem_error_pump_error_response">Sending %s command failed. Check Tandem Mobi pump notifications.</string>
+    <string name="tandem_error_no_shared_conn_data">Missing Shared Connection Data (connection sharing enabled)</string>
+    <string name="tandem_error_profile_only_16_segments">Tandem Mobi supports only 16 basal segments, adjust your profile accordingly.</string>
+
+
+    <!-- UI Common -->
+    <string name="common_percent_complete">%1$s %% complete</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_continue">Continue</string>
+    <string name="common_done">Done</string>
+    <string name="common_back">Back</string>
+    <string name="common_exit">Exit</string>
+
+
+    <!-- UI Data -->
+
+    <string name="data_data">Data</string>
+    <string name="data_notifications">Notifications</string>
+    <string name="data_notifications_desc">Notifications sent by Pump</string>
+    <string name="data_events">Events</string>
+    <string name="data_events_desc">Qualifying Events sent from Pump (stored in database)</string>
+    <string name="data_pump_history">Pump History</string>
+    <string name="data_pump_history_desc">Pump History stored in database</string>
+    <string name="data_pump_history_log_details_title">History Log Details</string>
+
+    <string name="data_history_log_date_time">Date &amp; Time</string>
+    <string name="data_history_log_group">Group</string>
+    <string name="data_history_log_details">Details</string>
+    <string name="data_history_log_name">Name</string>
+    <string name="data_history_time_range">Time Range</string>
+
+    <string name="notif_alert">Alert</string>
+    <string name="notif_reminder">Reminder</string>
+    <string name="notif_alarm">Alarm</string>
+    <string name="notif_cgm_alert">CGM Alert</string>
+    <string name="notif_malfunction_big">MALFUNCTION</string>
+    <string name="notif_malfunction">Malfunction</string>
+    <string name="notif_cant_be_cleared">This alert cannot be cleared and DIY app developers cannot assist you with this problem.\nFor further instructions please contact Tandem technical support and reference the above code.</string>
+
+
+    <string name="data_qe_filter_description">Which Pump Events to Show?</string>
+    <string name="data_qe_filter_all">All</string>
+    <string name="pump_qe_filter_aaps_relevant">AAPS Relevant Only</string>
+
+    <string name="data_qe_range_description">How many Pump Events to Show?</string>
+    <string name="data_qe_range_last_15_items">Last 15 items</string>
+    <string name="pump_qe_range_last_3_hours">Last 3 hours</string>
+    <string name="pump_qe_range_last_6_hours">Last 6 hours</string>
+    <string name="pump_qe_range_last_12_hours">Last 12 hours</string>
+    <string name="pump_qe_range_last_24_hours">Last 24 hours</string>
+
+    <string name="pump_quick_bolus_description">Quick Bolus</string>
+    <string name="pump_quick_bolus_disabled">Disabled</string>
+    <string name="pump_quick_bolus_units_0_5">0.5 Units</string>
+    <string name="pump_quick_bolus_units_1_0">1 Unit</string>
+    <string name="pump_quick_bolus_units_2_0">2 Units</string>
+    <string name="pump_quick_bolus_units_5_0">5 Units</string>
+    <string name="pump_quick_bolus_carbs_2g">For 2g of Carbs</string>
+    <string name="pump_quick_bolus_carbs_5g">For 5g of Carbs</string>
+    <string name="pump_quick_bolus_carbs_10g">For 10g of Carbs</string>
+    <string name="pump_quick_bolus_carbs_15g">For 15g of Carbs</string>
+
+
+    <!-- UI Configuration -->
+    <string name="ui_cfg_configuration">Configuration</string>
+
+    <!-- UI Configuration::PumpInfo -->
+    <string name="pi_title">Pump Info</string>
+    <string name="pi_version">Version</string>
+    <string name="pi_sw_part_num">S/W Part Number</string>
+    <string name="pi_pcba_serial">PCBA serial</string>
+    <string name="pi_pump_model">Pump Model</string>
+    <string name="pi_pump_sw">Pump Software</string>
+
+    <!-- UI Configuration::PumpInfo::Debug Commands -->
+    <string name="debug_commands_title">Debug Commands</string>
+
+
+    <!-- UI Configuration::Actions -->
+    <string name="ui_a_title">Actions</string>
+    <string name="ui_a_min_ago">%1$d min left</string>
+
+
+
+
+    <string name="ca_title32325656">Settings / Actions</string>
+    <string name="ca_title3232445">Settings / Actions</string>
+
+    <!-- UI Actions::Cartridge Actions -->
+    <string name="ca_label">Cartridge Setup</string>
+    <string name="ps_cartridge_units">Cartridge   %1$d / %2$d U</string>
+    <string name="ps_cartridge_empty">Cartridge empty</string>
+    <string name="ps_workflow_changing">Changing cartridge…</string>
+    <string name="ps_workflow_filling_tubing">Filling tubing…</string>
+    <string name="ps_workflow_filling_cannula">Filling cannula…</string>
+    <string name="ps_insulin_delivering">Insulin delivery enabled</string>
+    <string name="ps_insulin_suspended">Insulin delivery suspended</string>
+    <string name="ca_disconnect_pump_from_site">Disconnect your pump from your body/site and press \'%1$s\' button below.</string>
+    <string name="ca_before_stop_delivery">Before %1$s, stop delivery of insulin.</string>
+    <string name="ca_status_heading">Status</string>
+    <string name="ca_next_step_heading">Next step</string>
+    <string name="ca_before_you_start_heading">Before you start</string>
+    <string name="ca_progress_heading">Progress</string>
+    <string name="ca_btn_suspend_insulin">Suspend Insulin</string>
+    <string name="ca_btn_resume_insulin">Resume Insulin Delivery</string>
+    <string name="ca_suspend_confirm_title">Suspend insulin delivery?</string>
+    <string name="ca_suspend_confirm_body">This will stop all insulin delivery until you resume.</string>
+    <string name="ca_resume_confirm_title">Resume insulin delivery?</string>
+    <string name="ca_resume_confirm_body">Insulin delivery will resume.</string>
+    <string name="ca_notifications_block_warning">Resolve pump notifications before starting.</string>
+    <string name="ca_disabled_change_in_progress">Complete the active cartridge change first.</string>
+    <string name="ca_disabled_fill_tubing_in_progress">Complete the active tubing fill first.</string>
+    <string name="ca_disabled_fill_cannula_in_progress">Complete the active cannula fill first.</string>
+    <string name="ca_disabled_load_then_fill_tubing">Cartridge change complete — fill the tubing next.</string>
+    <string name="ca_step_x_of_y">Step %1$d of %2$d</string>
+    <string name="ca_notifications_panel_title">Pump notifications</string>
+    <string name="ca_dismiss_notifications_title">Dismiss notifications before continuing</string>
+    <string name="ft_incomplete_fill_dialog_body">Fill tubing not yet complete. Press OK to continue filling the tubing.</string>
+    <string name="cc_incomplete_change_dialog_body">Cartridge change not yet complete. Press OK to continue changing the cartridge.</string>
+    <string name="fc_incomplete_fill_dialog_body">Fill cannula not yet complete. Press OK to continue filling the cannula.</string>
+    <string name="fc_setup_complete_body">Cartridge setup is complete. Insulin delivery is suspended.</string>
+    <string name="fc_exit_without_resume_body">Insulin is still suspended. Exit without resuming?</string>
+    <string name="fc_btn_exit_anyway">Exit anyway</string>
+    <string name="ca_notifications_none">No active Pump notifications.</string>
+    <string name="ca_notifications_refresh">Refresh notifications</string>
+    <string name="ca_notifications_checking">Checking for notifications…</string>
+    <string name="ft_keep_holding_button">Keep holding the pump button — releasing stops the fill.</string>
+    <string name="ft_release_confirm_prompt">Pump button released. Do you see insulin at the cannula?</string>
+    <string name="ft_disconnect_confirm_title">Is your pump disconnected from your body?</string>
+    <string name="ft_status_filling_stopped">Filling stopped</string>
+    <string name="ft_yes_label">Yes</string>
+    <string name="ft_yes_action">Tap \"Complete Fill\" below.</string>
+    <string name="ft_no_label">No</string>
+    <string name="ft_no_action">Hold the pump button again to keep filling.</string>
+    <string name="ft_motor_warning">If holding the pump button does not move the motor, tap \"Restart Fill\" instead.</string>
+    <string name="ft_to_site_selection">To Site Selection</string>
+    <string name="ca_incomplete_load_warning_title">Cartridge fill not complete</string>
+    <string name="ca_incomplete_load_warning_body">You haven\'t completed the cartridge fill process, so insulin delivery can\'t begin. To return to fill your tubing/cannula, press Cancel.</string>
+    <string name="cc_cancel_confirm_title">Cancel cartridge change?</string>
+    <string name="cc_cancel_confirm_body">The cartridge change will be cancelled and the pump will exit cartridge change mode.</string>
+    <string name="cc_to_insulin_selection">To Insulin Selection</string>
+    <string name="ft_cancel_confirm_title">Cancel tubing fill?</string>
+    <string name="ft_cancel_confirm_body">The tubing fill will be cancelled and the pump will exit fill tubing mode.</string>
+    <string name="fc_cancel_confirm_title">Cancel cannula fill?</string>
+    <string name="fc_cancel_confirm_body">The cannula fill will be cancelled.</string>
+
+    <string name="ca_stop_start_insulin">Stop / Start Insulin</string>
+    <string name="ca_start_insulin">Start Insulin</string>
+    <string name="ca_stop_insulin">Stop Insulin</string>
+    <string name="ca_stop_resume_insulin_deliveries">Stop or resume insulin deliveries</string>
+    <string name="ca_resume_insulin_deliveries">Resume insulin deliveries</string>
+    <string name="ca_stop_insulin_deliveries">Stop insulin deliveries</string>
+
+    <string name="common_warning">Warning</string>
+    <string name="ca_before_stopping_stop_tbr">Before stopping delivery, you need to stop the active Temp Basal Rate.</string>
+
+    <string name="ca_resume_insulin">Resume insulin</string>
+    <string name="ca_resume_all_insulin_deliveries">Resume all insulin deliveries?</string>
+    <string name="ca_stop_insulin_small">Stop insulin</string>
+    <string name="ca_start_insulin_small">Start insulin</string>
+    <string name="ca_suspend_all_insulin_deliveries">Suspend all insulin deliveries?</string>
+
+    <string name="ca_stop_temp_rate">Stop Temp Rate</string>
+    <string name="ca_start_temp_rate">Start Temp Rate</string>
+    <string name="ca_active">Active: %s</string>
+    <string name="ca_stop_active_temp_rate">Stop the active temp rate: %1$d%% for %2$s beginning %3$s</string>
+
+    <string name="ca_cartridge_cannula_setup">Cartridge/Cannula Setup</string>
+    <string name="ca_pump_info">Pump Info</string>
+    <string name="ca_hours_minutes_short">%1$dh %2$dm</string>
+
+
+    <!-- UI Cartridge Actions:Change Cartridge -->
+    <string name="cc_title">Change Cartridge</string>
+    <string name="cc_complete">Cartridge change complete.</string>
+    <string name="cc_detect_insulin_cart">Detecting insulin in the cartridge…</string>
+    <string name="cc_can_remove_cart">You can now remove the cartridge from the pump.</string>
+    <string name="cc_when_inserted_press">When you\'ve inserted a new cartridge, press \'Cartridge Inserted\' button below.</string>
+    <string name="cc_preparing_cc">Preparing to change cartridge…</string>
+    <string name="cc_btn_cart_inserted">Cartridge Inserted</string>
+    <string name="cc_action">changing your cartridge</string>
+    <string name="cc_btn_begin">Begin Change Cartridge</string>
+
+    <!-- UI Cartridge Actions:Fill Tubing -->
+    <string name="ft_title">Fill Tubing</string>
+    <string name="ft_complete">You can now connect the infusion site to your body and then fill the cannula.</string>
+    <string name="ft_restart_text">Restarting tubing fill...</string>
+    <string name="ft_hold_pump_button">Hold down the pump button to fill insulin through the tubing.</string>
+    <string name="ft_no_filled_insulin">You haven\'t filled any insulin through the tubing yet.</string>
+    <string name="ft_filling">FILLING… continue to hold down button until you see insulin drops at the cannula.</string>
+    <string name="ft_stopped_fill_1">STOPPED FILLING… do you see insulin drops at the cannula?</string>
+    <string name="ft_continue_filling">"If not, hold down the pump button to continue filling the tubing."</string>
+    <string name="ft_continue_filling_2">"If holding down the pump button does not move the motor, press the \'Restart Fill\' button below to continue filling the tubing."</string>
+    <string name="ft_btn_begin">Begin Fill Tubing</string>
+    <string name="ft_btn_restart">Restart Fill</string>
+    <string name="ft_action">filling your tubing</string>
+    <string name="ft_btn_complete">Complete Fill</string>
+    <string name="ft_finalizing_wait">Please wait, finalizing tubing fill…</string>
+    <string name="ft_finalizing_status_NOT_COMPLETE">NOT COMPLETE</string>
+
+    <!-- UI Cartridge Actions:Fill Cannula -->
+    <string name="fc_title">Fill Cannula</string>
+    <string name="fc_complete">Cannula filled.</string>
+    <string name="fc_action">filling your cannula</string>
+    <string name="fc_filling_with">Filling cannula with %1$d unit…</string>
+    <string name="fc_filling_state">State: %1$d</string>
+    <string name="fc_cannula_fill_amount">Enter the cannula fill amount (U):</string>
+    <string name="fc_fill_amount">Fill amount</string>
+    <string name="fc_btn_fill_cannula_u">Fill %1$.1fU Cannula</string>
+    <string name="fc_quick_amount_heading">Quick amounts</string>
+    <string name="fc_quick_amount_0_1">0.1U</string>
+    <string name="fc_quick_amount_0_3">0.3U</string>
+    <string name="fc_quick_amount_0_5">0.5U</string>
+    <string name="fc_quick_amount_1_0">1.0U</string>
+
+
+
+
+
+
+    <!-- UI Cartridge Actions:ChangeCartridge -->
+
+    <!-- UI Cartridge Actions:Site Reminder -->
+    <string name="sr_title">Site Reminder</string>
+    <string name="sr_coming_soon">Coming soon</string>
+    <string name="sr_reminder_description">This "Site Reminder" stores data in AAPS, instead of the Pump.</string>
+
+    <string name="reminder_in_1_5_days">Reminder in 1.5 Days</string>
+    <string name="reminder_in_2_days">Reminder in 2 Days</string>
+    <string name="reminder_in_2_5_days">Reminder in 2.5 Days</string>
+    <string name="reminder_in_3_days">Reminder in 3 Days</string>
+    <string name="reminder_in_4_days">Reminder in 4 Days</string>
+    <string name="reminder_in_5_days">Reminder in 5 Days</string>
+    <string name="reminder_in_6_days">Reminder in 6 Days</string>
+    <string name="reminder_in_7_days">Reminder in 7 Days</string>
+    <string name="reminder_in_8_days">Reminder in 8 Days</string>
+
+    <string name="sr_site_change_presets">Site Change Presets</string>
+    <string name="sr_apply_preset">Apply Preset</string>
+    <string name="sr_adjust_time">Adjust Time</string>
+    <string name="sr_adjust_date">Adjust Date</string>
+    <string name="sr_save">Save</string>
+    <string name="reminder_in_3_day3s">Reminder in 3 Days</string>
+    <string name="reminder_in_3_d4ays">Reminder in 3 Days</string>
+
+    <!-- Command Errors -->
+
+    <!-- Tandem Config -->
+    <string name="key_tandem_error" translatable="false">pref_tandem_error</string>
+
+    <!-- Temporary Config - START -->
+    <!-- Temporary Config - END -->
+
+
+    <string name="tandem_configuration">Tandem Configuration</string>
+    <string name="tandem_pump_configuration">Tandem Pump Connection Wizard</string>
+    <string name="tandem_pump_configuration_subtitle">Connect to and pair AAPS with a Mobi pump</string>
+    <string name="tandem_pump_max_bolus">Max Bolus on Pump (U) [Max 25]</string>
+    <string name="tandem_pump_max_basal">Max Basal on Pump (U/h) [Max 15]</string>
+    <string name="tandem_cfg_display_driver_version">Display Driver Version</string>
+    <string name="tandem_cfg_display_driver_version_summary">Shows driver version</string>
+    <string name="tandem_cfg_use_shared_connection">Use Shared Connection</string>
+    <string name="tandem_cfg_use_shared_connection_summary">Use Shared Connection with ControlX2</string>
+    <string name="tandem_cfg_shared_connection_data">Shared Connection Data</string>
+    <string name="tandem_cfg_shared_connection_data_summary">Shared Connection Data (exported from ControlX2)</string>
+    <string name="tandem_cfg_show_cargo_of_unknown_logs">Show Cargo/Payload of Unknown Logs</string>
+    <string name="tandem_cfg_show_cargo_of_unknown_logs_summary">If Unknown Logs are displayed, we also display payload (raw data)</string>
+    <string name="tandem_cfg_auto_confirm_low_basal_delivery">Auto confirm Low Basal Delivery Alert</string>
+    <string name="tandem_cfg_auto_confirm_low_basal_delivery_summary">When Basal delivery is less that certain percent, Low Basal Delivery alert gets triggered. This automatically confirms that alert.</string>
+    <string name="tandem_pump_pair_status">Pump Pair Status</string>
+
+
+    <!-- Commands -->
+    <string name="tandem_custom_command_disable_control_iq">Disable ControlIQ</string>
+    <string name="tandem_custom_command_set_max_bolus">Set Max Bolus</string>
+    <string name="tandem_custom_command_set_max_basal">Set Max Basal</string>
+    <string name="tandem_custom_command_get_pump_info">Get Pump Info</string>
+    <string name="tandem_custom_command_get_alarms">Get Alarms</string>
+    <string name="tandem_custom_command_get_alerts">Get Alerts</string>
+    <string name="tandem_custom_command_dismiss_alert">Dismiss Alert</string>
+    <string name="tandem_custom_command_get_quick_bolus">Get Quick Bolus</string>
+    <string name="tandem_custom_command_set_quick_bolus">Set Quick Bolus</string>
+    <string name="tandem_custom_command_get_malfunctions">Get Malfunctions</string>
+    <string name="tandem_custom_command_set_pump_sounds">Set Pump Sounds</string>
+
+
+
+
+    <!-- Tandem specific constraints -->
+    <string name="tandem_constraint_basal_rate_max_250">Max allowed Basal Rate is 250%% which is %1$.2f, with Base Basal Rate of %2$.2f.</string>
+    <string name="tandem_constraint_basal_rate_min_0_1u">Requested effective basal rate is %.2f U/h, which is below the minimum pump allowed non-zero basal rate of 0.1 U/h, so lowering basal rate to 0 U/h.</string>
+    <string name="tandem_constraint_basal_rate_on_pump">Max configured Basal Rate on pump is %.2f U/h.</string>
+    <string name="tandem_constraint_basal_rate_percent">Requested TBR was %d %%, which is more than pump allows (250%%), so limiting to 250%%.</string>
+    <string name="tandem_constraint_basal_rate_percent_max_pump">Requested TBR %% was bigger than max configured basal on pump %d.</string>
+    <string name="tandem_constraint_SMB">SMB Allowed on Mobi.</string>
+    <string name="tandem_constraint_bolus_minimum">Bolus rounded down to 0 U (minimum bolus is %1$.2f U)</string>
+    <string name="tandem_constraint_bolus_maximum">Bolus limited to %1$d U (pump max bolus setting)</string>
+
+
+    <!-- Tandem BLE Config -->
+    <string name="tandem_ble_config_scan_title">Tandem Scan</string>
+    <string name="tandem_ble_config_selected_pump_title">Selected Tandem pump</string>
+    <string name="tandem_ble_config_remove_pump_confirmation">Are you sure that you want to remove your Tandem pump?</string>
+    <string name="tandem_ble_config_remove_pump_title">Remove Tandem pump</string>
+    <string name="tandem_ble_config_no_pump_selected">No Tandem pump selected</string>
+    <string name="ble_config_scan_start">Start Scan</string>
+    <string name="ble_config_scan_stop">Stop Scan</string>
+    <string name="ble_config_scanning">Scanning for devices...</string>
+    <string name="ble_config_no_devices">No devices found. Place your pump on the wireless charger and try again.</string>
+
+
+
+
+    <!-- Tandem Mobi Management  DEP -->
+<!--    <string name="tandem_mobi_management">Tandem Mobi Management</string>-->
+<!--    <string name="tandem_sett_delivery_limits">Delivery Limits</string>-->
+<!--    <string name="tandem_sett_load_cartridge">Load Cartridge</string>-->
+<!--    <string name="tandem_sett_pump_info">Pump info</string>-->
+
+<!--    <string name="tandem_mobi_mgmt_load_cartridge">Load Cartridge</string>-->
+<!--    <string name="tandem_mobi_mgmt_cart_change_cartridge">Change Cartridge</string>-->
+<!--    <string name="tandem_mobi_mgmt_cart_fill_tubing">Fill Tubing</string>-->
+<!--    <string name="tandem_mobi_mgmt_cart_fill_cannula">Fill Cannula</string>-->
+<!--    <string name="tandem_mobi_mgmt_cart_site_reminder">Site Reminder</string>-->
+
+<!--    <string name="tandem_mobi_mgmt_other_actions">Other Actions</string>-->
+<!--    <string name="tandem_mobi_mgmt_act_delivery_limit">Delivery Limit</string>-->
+<!--    <string name="tandem_mobi_mgmt_act_pump_info">Pump Info</string>-->
+
+
+    <!-- Tandem UI - 2.5 Forced Open Loop -->
+    <string name="tandem_fol_closed_loop_not_allowed_x2">Closed Loop not available with Firmware less than 3.5 (Mobi)</string>
+    <string name="tandem_fol_closed_loop_not_allowed_firmware">Closed Loop not available with Firmware less than 3.5 (Mobi)</string>
+    <string name="tandem_fol_smb_not_allowed">SMB not available with Firmware less than 3.5 (Mobi)</string>
+
+
+    <!-- Tandem Pump History -->
+    <string name="tandem_pump_history">Tandem Pump History</string>
+    <string name="tandem_pump_history_type">Type:</string>
+
+    <!-- Tandem History -->
+<!--    <string name="tandem_history_date" translatable="false">%02d.%02d.%d %02d:%02d:%02d</string>-->
+<!--    <string name="tandem_history_date_changed">Date Changed: %s</string>-->
+<!--    <string name="tandem_history_time_changed">Time Changed: %s</string>-->
+
+
+    <!-- State Machines - Deprecated-->
+<!--    <string name="state_machine_common_cancel">Cancel</string>-->
+<!--    <string name="state_machine_common_continue">Continue</string>-->
+<!--    <string name="state_machine_common_no">No</string>-->
+<!--    <string name="state_machine_common_yes">Yes</string>-->
+    <!--    <string name="tandem_state_machine_error_pump_critical_error">Pump Critical Error: %s</string>-->
+
+
+
+    <!-- Tandem UI ???? -->
+    <string name="tandem_ble_config_pairing_title">Tandem Pairing</string>
+    <string name="tandem_ble_config_pairing_message">Enter the pairing code (case-sensitive) from\nBluetooth Settings > Pair Device to connect to:\n\n%s (%s)</string>
+
+    <!-- Notifications -->
+    <string name="tandem_notification_wrong_pairing_code">Your Pairing Code is no longer valid. Please reconfigure your Tandem Pump.</string>
+    <string name="tandem_notification_site_reminder">Tandem - Site Reminder. You need to change your site/cannula.</string>
+    <string name="tandem_notification_pump_settings_changed">Changed following settings on the pump: %s</string>
+
+
+    <!-- Pump Common MOVE THERE -->
+
+    <!-- Configuration -->
+    <string name="eightdigitnumber" translatable="false">^\\d{8}</string>
+
+    <string name="common_on">On</string>
+    <string name="common_off">Off</string>
+    <string name="common_close">Close</string>
+
+    <!-- Connection Wizard -->
+    <string name="tandem_pair_pump">Pair Pump</string>
+    <string name="tandem_repair_pump">Re-pair Pump</string>
+    <string name="tandem_wizard_title">Tandem Pump Connection Wizard</string>
+
+    <!-- Introduction Screen -->
+    <string name="tandem_wizard_intro_title">Pair Your Tandem Mobi Pump</string>
+    <string name="tandem_wizard_repair_title">Re-pair Your Tandem Mobi Pump</string>
+    <string name="tandem_wizard_intro_description">This wizard will guide you through pairing your Tandem Mobi pump with your phone via Bluetooth.</string>
+    <string name="tandem_wizard_intro_prerequisites">Prerequisites:\n&#8226; Pump is powered on\n&#8226; Pump has been placed on the wireless charger \n&#8226; You have the 6-digit PIN from the pump</string>
+    <string name="tandem_wizard_begin_pairing">Begin Pairing</string>
+
+    <!-- Device Selection -->
+    <string name="tandem_wizard_waiting_device_selection">Please select your pump from the device list.\n\nIf the Mobi does not show up:\n&#8226; Place it on the wireless charger\n&#8226; Wait for the white lights to appear on the pump\'s LED\n&#8226; Pick it up from the wireless charger and wait 3 seconds\n&#8226; Press the pump button twice, about one second apart\n&#8226; The pump should beep twice when you have completed the steps correctly.</string>
+
+    <!-- PIN Entry Screen -->
+    <string name="tandem_wizard_enter_pin_title">Enter Pairing PIN</string>
+    <string name="tandem_wizard_selected_device">Selected: %1$s\n%2$s</string>
+    <string name="tandem_wizard_enter_pin_description">Enter the 6-digit PIN written on the inside of the cartridge.</string>
+    <string name="tandem_wizard_pin_label">6-Digit PIN</string>
+    <string name="tandem_wizard_connect">Connect</string>
+    <string name="tandem_wizard_back_to_scan">Back to Scan</string>
+
+    <!-- Pairing Screen -->
+    <string name="tandem_wizard_pairing_title">Connecting to Pump</string>
+    <string name="tandem_wizard_pairing_in_progress">Please wait...</string>
+    <string name="tandem_wizard_pairing_starting">Starting pairing process... please pick up the pump from its charger and double-press the T button</string>
+    <string name="tandem_wizard_pairing_waiting_code">Waiting for pairing code...</string>
+    <string name="tandem_wizard_pairing_connecting">Connecting to pump...</string>
+    <string name="tandem_wizard_pairing_connected">Connected</string>
+    <string name="tandem_wizard_pairing_getting_info">Getting pump information...</string>
+    <string name="tandem_wizard_pairing_finalizing">Finalizing connection...</string>
+
+    <!-- Error Screen -->
+    <string name="tandem_wizard_error_title">Pairing Failed</string>
+    <string name="tandem_wizard_error_incorrect_pin">The PIN you entered was incorrect. Please verify the 6-digit PIN displayed on the pump.</string>
+    <string name="tandem_wizard_error_timeout">Could not connect to the pump. Make sure the pump is nearby and Bluetooth is enabled.</string>
+    <string name="tandem_wizard_error_bluetooth">A Bluetooth error occurred. Try turning Bluetooth off and on, then retry.</string>
+    <string name="tandem_wizard_error_unknown">An unknown error occurred during pairing. Please try again.</string>
+    <string name="tandem_wizard_retry_count">Attempt %1$d</string>
+    <string name="tandem_wizard_edit_pin">Edit PIN</string>
+    <string name="tandem_wizard_retry">Retry</string>
+    <string name="tandem_wizard_cancel_rescan">Cancel and Rescan</string>
+
+    <!-- Success Screen -->
+    <string name="tandem_wizard_success_title">Successfully Connected!</string>
+    <string name="tandem_wizard_success_description">Your Tandem Mobi pump has been paired successfully.</string>
+    <string name="tandem_wizard_pump_name_label">Pump Name</string>
+    <string name="tandem_wizard_pump_serial_label">Serial Number</string>
+    <string name="tandem_wizard_pump_supported_capabilities">Supported Capabilities</string>
+    <string name="tandem_wizard_pump_closed_loop_supported">Closed Loop supported</string>
+    <string name="tandem_wizard_pump_bolus_only_supported">Open Loop with bolus supported (no closed loop)</string>
+    <string name="tandem_wizard_pump_open_loop_only">Open Loop only (no closed loop)</string>
+    <string name="tandem_wizard_finish">Finish</string>
+
+    <!-- Existing pump dialog -->
+    <string name="tandem_wizard_existing_pump_title">Pump Already Configured</string>
+    <string name="tandem_wizard_existing_pump_message">To pair a new pump, the existing pump must be disconnected. No other data in AndroidAPS will be removed. Do you want to continue?</string>
+    <string name="tandem_wizard_existing_pump_continue">Continue</string>
+    <string name="tandem_wizard_existing_pump_cancel">Cancel</string>
+
+
+    <!-- OLD Ones past this line -->
+
+
+
+
+<!--    <string name="key_set_neutral_temps" translatable="false">set_neutral_temps</string>-->
+<!--    <string name="set_neutral_temps_title">Set neutral temp basals</string>-->
+<!--    <string name="set_neutral_temps_summary">If enabled, it will cancel a temporary basal before the end of each hour. This method can help stop some pumps beeping/vibrating on the hour.</string>-->
+
+
+</resources>

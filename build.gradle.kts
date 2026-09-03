@@ -4,7 +4,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
-        mavenCentral()
         google()
     }
     dependencies {
@@ -35,8 +34,8 @@ val kotlinMetadataVersion = libs.versions.kotlin.get()
 
 allprojects {
     repositories {
-        mavenCentral()
         google()
+        mavenCentral()
         maven("https://jitpack.io")
     }
     tasks.withType<KotlinCompile>().configureEach {

@@ -4,5 +4,7 @@ enum class PumpTypeGroupConfig {
     All,
     Medtronic,
     OmnipodEros,
-    YpsoPump
+    YpsoPump,
+    tSlim,
+    tMobi
 }

@@ -1,6 +1,25 @@
 <manifest>
 
+<!--    <uses-permission android:name="android.permission.BLUETOOTH" />-->
+<!--    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />-->
+<!--    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />-->
+<!--    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />-->
+<!--    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />-->
+
     <application>
+<!--        <activity-->
+<!--            android:name="app.aaps.pump.common.ui.PumpBLEConfigActivity"-->
+<!--            android:theme="@style/AppTheme"-->
+<!--            android:exported="false">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="app.aaps.pump.common.ui.PumpBLEConfigActivity" />-->
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
+
+<!--        <activity android:name="app.aaps.pump.common.ui.PumpHistoryActivity" />-->
+
     </application>
+
 
 </manifest>

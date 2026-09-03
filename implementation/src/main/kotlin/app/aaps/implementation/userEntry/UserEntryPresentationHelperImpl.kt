@@ -72,6 +72,7 @@ import app.aaps.core.ui.compose.icons.IcPluginPocTec
 import app.aaps.core.ui.compose.icons.IcPluginRandomBg
 import app.aaps.core.ui.compose.icons.IcPluginSms
 import app.aaps.core.ui.compose.icons.IcPluginSyai
+import app.aaps.core.ui.compose.icons.IcPluginTMobi
 import app.aaps.core.ui.compose.icons.IcPluginTomato
 import app.aaps.core.ui.compose.icons.IcPluginVirtualPump
 import app.aaps.core.ui.compose.icons.IcProfile
@@ -172,6 +173,7 @@ class UserEntryPresentationHelperImpl @Inject constructor(
         Sources.SiteRotationDialog  -> IcSiteRotation
         Sources.Stats               -> IcStats
         Sources.SyaiTag             -> IcPluginSyai
+        Sources.Tandem              -> IcPluginTMobi
         Sources.TTDialog            -> IcTtHigh
         Sources.TempBasalDialog     -> IcTbrHigh
         Sources.Tomato              -> IcPluginTomato
@@ -262,6 +264,7 @@ class UserEntryPresentationHelperImpl @Inject constructor(
         Sources.Stats               -> ElementType.STATISTICS.color()
         Sources.SyaiTag             -> ElementType.CGM_DEX.color()
         Sources.TTDialog            -> ElementType.TEMP_TARGET_MANAGEMENT.color()
+        Sources.Tandem              -> ElementType.PUMP.color()
         Sources.TempBasalDialog     -> ElementType.TEMP_TARGET_MANAGEMENT.color()
         Sources.Tomato              -> ElementType.CGM_DEX.color()
         Sources.TreatmentDialog     -> ElementType.TREATMENT.color()

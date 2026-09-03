@@ -10,14 +10,17 @@ import app.aaps.pump.common.R
  *
  * Author: Andy {andy.rozman@gmail.com}
  */
-enum class PumpHistoryEntryGroup(val resourceId: Int, val pumpTypeGroupConfig: PumpTypeGroupConfig = PumpTypeGroupConfig.All) {
+enum class PumpHistoryEntryGroup(val resourceId: Int,
+                                 val pumpTypeGroupConfig: PumpTypeGroupConfig = PumpTypeGroupConfig.All) {
 
     All(R.string.history_group_all),
+    AllNoUnknowns(R.string.history_group_all_no_unknowns, PumpTypeGroupConfig.tMobi),
     Base(R.string.history_group_base),
     Bolus(R.string.history_group_bolus),
     Basal(R.string.history_group_basal),
     Prime(R.string.history_group_prime),
     Configuration(R.string.history_group_configuration),
+    IntegratedLoop(R.string.history_group_integrated_loop),
     Alarm(R.string.history_group_alarm),
     Glucose(R.string.history_group_glucose),
     Notification(R.string.history_group_notification),
@@ -26,21 +29,30 @@ enum class PumpHistoryEntryGroup(val resourceId: Int, val pumpTypeGroupConfig: P
     Unknown(R.string.history_group_unknown),
 
     // Ypso
-    EventsOnly(R.string.history_group_events),
-    EventsNoStat(R.string.history_group_events_no_stat)
+    EventsOnly(R.string.history_group_events, PumpTypeGroupConfig.YpsoPump),
+    EventsNoStat(R.string.history_group_events_no_stat, PumpTypeGroupConfig.YpsoPump)
 
     ;
 
     var translated: String? = null
         private set
 
-    override fun toString(): String {
-        return translated!!
+    // override fun toString(): String {
+    //     return getDisplayValue()
+    // }
+
+
+    fun getDisplayValue(): String {
+        return if (translated==null)
+            name
+        else
+            translated!!
     }
 
     companion object {
 
         @JvmStatic private var translatedList: MutableList<PumpHistoryEntryGroup>? = null
+        @JvmStatic var filteredEntries: MutableList<PumpHistoryEntryGroup> = mutableListOf()
 
         fun doTranslation(rh: ResourceHelper) {
             if (translatedList != null) return
@@ -67,6 +79,16 @@ enum class PumpHistoryEntryGroup(val resourceId: Int, val pumpTypeGroupConfig: P
                 }
 
             return outList
+        }
+
+
+
+        fun filterByGroupConfig(groupConfig: PumpTypeGroupConfig) {
+            for (entry in entries) {
+                if (entry.pumpTypeGroupConfig==PumpTypeGroupConfig.All || entry.pumpTypeGroupConfig==groupConfig) {
+                    this.filteredEntries.add(entry)
+                }
+            }
         }
     }
 }

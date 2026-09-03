@@ -20,6 +20,7 @@ fun PumpDescription.fillFor(pumpType: PumpType): PumpDescription {
         tempBasalStyle = PumpDescription.PERCENT
         pumpType.tbrSettings()?.maxDose?.let { maxTempPercent = it.toInt() }
         pumpType.tbrSettings()?.step?.let { tempPercentStep = it.toInt() }
+        tempAbsoluteStep = 0.0
     } else {
         tempBasalStyle = PumpDescription.ABSOLUTE
         pumpType.tbrSettings()?.maxDose?.let { maxTempAbsolute = it }
