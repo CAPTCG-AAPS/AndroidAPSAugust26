@@ -91,10 +91,12 @@ abstract class TandemModule {
 
 
     // Pump plugin registration — @IntKey range 1000–1200, see PluginsListModule for overview
+    // 1140 is taken by :pump:omnipod:common O5PumpPlugin on this branch; Tandem takes the next
+    // step so it lists directly below Omnipod 5 in Config Builder.
     @Binds
     @PumpDriver
     @IntoMap
-    @IntKey(1140)
+    @IntKey(1150)
     abstract fun bindTandemMobiPumpPlugin(plugin: TandemMobiPumpPlugin): PluginBase
 
 

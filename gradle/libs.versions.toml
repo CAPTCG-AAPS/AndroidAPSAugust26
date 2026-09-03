@@ -197,6 +197,7 @@ com-jakewharton-timber = { group = "com.jakewharton.timber", name = "timber", ve
 com-github-weliem-blessed-android = { group = "com.github.weliem", name = "blessed-android", version="2.4.0" }
 io-github-vanpra-compose-dialogs-datetime = { group = "io.github.vanpra.compose-material-dialogs", name = "datetime", version="0.9.0" }
 com-github-jwoglom-pumpx2-android = { group = "com.github.jwoglom.pumpX2", name = "pumpx2-android", version="v1.9.1" }
+org-bouncycastle-bcprov-jdk18on = { group = "org.bouncycastle", name = "bcprov-jdk18on", version="1.81" }
 androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 
