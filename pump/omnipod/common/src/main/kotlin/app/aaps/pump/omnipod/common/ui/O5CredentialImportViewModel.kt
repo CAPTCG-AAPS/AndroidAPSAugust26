@@ -1,12 +1,19 @@
 package app.aaps.pump.omnipod.common.ui
 
-import androidx.compose.runtime.Stable
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5RegistrationData
 import app.aaps.pump.omnipod.common.bledriver.pod.security.SecureO5RegistrationStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
 import javax.inject.Inject
@@ -22,6 +29,17 @@ sealed class ImportResult {
     object None : ImportResult()
     data class Success(val controllerId: Long) : ImportResult()
     data class Failure(val reason: String) : ImportResult()
+}
+
+/** State of a certificate download or test-attestation run, so the screen can react. */
+sealed class DownloadState {
+    object Idle : DownloadState()
+    data class InProgress(val message: String, val index: Int, val total: Int) : DownloadState()
+    data class Success(val controllerId: Long) : DownloadState()
+    data class Failure(val reason: String, val recovery: String?) : DownloadState()
+
+    /** A test attestation was produced; [text] is the shareable block for the operator. */
+    data class TestAttestationReady(val text: String) : DownloadState()
 }
 
 /**
@@ -40,7 +58,9 @@ sealed class ImportResult {
  */
 @HiltViewModel
 class O5CredentialImportViewModel @Inject constructor(
-    private val secureO5RegistrationStorage: SecureO5RegistrationStorage
+    private val secureO5RegistrationStorage: SecureO5RegistrationStorage,
+    @ApplicationContext private val context: Context,
+    private val aapsLogger: AAPSLogger
 ) : ViewModel() {
 
     private val _inputText = MutableStateFlow("")
@@ -52,8 +72,76 @@ class O5CredentialImportViewModel @Inject constructor(
     private val _installedCredentials = MutableStateFlow<List<InstalledCredentialRow>>(emptyList())
     val installedCredentials: StateFlow<List<InstalledCredentialRow>> = _installedCredentials
 
+    private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
+    val downloadState: StateFlow<DownloadState> = _downloadState
+
+    /** Overridable so tests can supply a fake; production builds one per run against the real server. */
+    var attestationServiceFactory: () -> O5KeyAttestationService = {
+        O5KeyAttestationService(context, aapsLogger)
+    }
+
+    /** The dispatcher the blocking attestation/HTTP work runs on. Overridable in tests. */
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     init {
         refreshInstalledCredentials()
+    }
+
+    /**
+     * Downloads a credential by proving this device's hardware to the OSAID key-manager, then
+     * installs and persists it exactly like a pasted credential. Runs off the main thread. Until
+     * the key-manager accepts Android, this surfaces the server's refusal as a [DownloadState.Failure].
+     */
+    fun downloadCredential(provideSetupToken: () -> String? = { null }) {
+        if (_downloadState.value is DownloadState.InProgress) return
+        _downloadState.value = DownloadState.InProgress(
+            O5KeyAttestationService.Progress.CheckingServiceStatus.message, 1, O5KeyAttestationService.Progress.totalSteps
+        )
+        viewModelScope.launch {
+            val result = withContext(ioDispatcher) {
+                runCatching {
+                    attestationServiceFactory().fetchCredential(
+                        progress = { step ->
+                            _downloadState.value = DownloadState.InProgress(step.message, step.index, O5KeyAttestationService.Progress.totalSteps)
+                        },
+                        requestToken = provideSetupToken
+                    )
+                }
+            }
+            result.onSuccess { data ->
+                O5RegistrationData.install(data, O5RegistrationData.O5RegistrationSource.DOWNLOADED)
+                secureO5RegistrationStorage.persistEntry(data, O5RegistrationData.O5RegistrationSource.DOWNLOADED)
+                _downloadState.value = DownloadState.Success(data.controllerId)
+                refreshInstalledCredentials()
+            }.onFailure { e ->
+                val recovery = (e as? O5KeyAttestationService.AttestationException)?.recoverySuggestion
+                _downloadState.value = DownloadState.Failure(e.message ?: "Certificate download failed", recovery)
+            }
+        }
+    }
+
+    /**
+     * Produces a hardware attestation sample without contacting any server, for the user to hand
+     * to the key-manager operator so they can build and test their server-side checks. No pod or
+     * credential state is touched.
+     */
+    fun buildTestAttestation() {
+        _downloadState.value = DownloadState.InProgress("Building attestation sample…", 1, 1)
+        viewModelScope.launch {
+            val result = withContext(ioDispatcher) {
+                runCatching { attestationServiceFactory().buildTestAttestation() }
+            }
+            result.onSuccess { att ->
+                _downloadState.value = DownloadState.TestAttestationReady(att.toShareableText())
+            }.onFailure { e ->
+                val recovery = (e as? O5KeyAttestationService.AttestationException)?.recoverySuggestion
+                _downloadState.value = DownloadState.Failure(e.message ?: "Could not build an attestation sample", recovery)
+            }
+        }
+    }
+
+    fun clearDownloadState() {
+        _downloadState.value = DownloadState.Idle
     }
 
     fun onInputChanged(text: String) {

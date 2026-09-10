@@ -10,7 +10,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -18,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aaps.core.interfaces.resources.ResourceHelper
@@ -40,6 +46,8 @@ fun O5CredentialImportScreen(
     val inputText by viewModel.inputText.collectAsState()
     val importResult by viewModel.importResult.collectAsState()
     val installedCredentials by viewModel.installedCredentials.collectAsState()
+    val downloadState by viewModel.downloadState.collectAsState()
+    val clipboard = LocalClipboardManager.current
 
     Column(
         modifier = Modifier
@@ -90,6 +98,84 @@ fun O5CredentialImportScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Import")
+        }
+
+        HorizontalDivider()
+
+        Text(
+            text = "Download a certificate",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "Prove this phone's hardware to the key-management server and download a " +
+                "certificate. The key-management server does not accept Android yet, so this " +
+                "will report that until it does.",
+            style = MaterialTheme.typography.bodySmall
+        )
+
+        val downloadBusy = downloadState is DownloadState.InProgress
+        Button(
+            onClick = { viewModel.downloadCredential() },
+            enabled = !downloadBusy,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Download certificate")
+        }
+        OutlinedButton(
+            onClick = { viewModel.buildTestAttestation() },
+            enabled = !downloadBusy,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Create test attestation")
+        }
+
+        when (val state = downloadState) {
+            is DownloadState.InProgress          -> {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Text(
+                    text = "${state.message} (${state.index}/${state.total})",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            is DownloadState.Success             -> Text(
+                text = "Downloaded certificate for controller 0x%08X".format(state.controllerId),
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            is DownloadState.Failure             -> Text(
+                text = listOfNotNull(state.reason, state.recovery).joinToString("\n"),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            is DownloadState.TestAttestationReady -> {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 220.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = state.text,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
+                Button(
+                    onClick = { clipboard.setText(AnnotatedString(state.text)) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Copy attestation")
+                }
+            }
+
+            DownloadState.Idle                   -> Unit
         }
 
         if (installedCredentials.isNotEmpty()) {

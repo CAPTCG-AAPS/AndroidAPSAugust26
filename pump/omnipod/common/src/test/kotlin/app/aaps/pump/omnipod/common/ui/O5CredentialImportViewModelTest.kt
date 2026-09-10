@@ -2,7 +2,13 @@ package app.aaps.pump.omnipod.common.ui
 
 import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5RegistrationData
 import app.aaps.pump.omnipod.common.bledriver.pod.security.SecureO5RegistrationStorage
+import app.aaps.shared.tests.AAPSLoggerTest
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,8 +24,18 @@ import java.util.Base64
 class O5CredentialImportViewModelTest {
 
     private val secureO5RegistrationStorage = mock<SecureO5RegistrationStorage>()
+    private val aapsLogger = AAPSLoggerTest()
+    private val testDispatcher = StandardTestDispatcher()
 
-    private fun newViewModel() = O5CredentialImportViewModel(secureO5RegistrationStorage)
+    private fun newViewModel() = O5CredentialImportViewModel(secureO5RegistrationStorage, mock(), aapsLogger)
+
+    /** A test double for the attestation service; the download tests inject it via the factory. */
+    private fun fakeService(
+        onFetch: () -> O5RegistrationData = { throw O5KeyAttestationService.AttestationException("boom") }
+    ): O5KeyAttestationService = object : O5KeyAttestationService(mock(), aapsLogger) {
+        override fun fetchCredential(progress: (Progress) -> Unit, requestToken: () -> String?): O5RegistrationData =
+            onFetch()
+    }
 
     private fun packedCredential(controllerId: Long): String {
         val privB64 = Base64.getEncoder().encodeToString(byteArrayOf(1, 2, 3, 4))
@@ -29,12 +45,14 @@ class O5CredentialImportViewModelTest {
 
     @BeforeEach
     fun clearRegistrationData() {
+        Dispatchers.setMain(testDispatcher)
         O5RegistrationData.allValues.forEach { O5RegistrationData.remove(it.controllerId) }
     }
 
     @AfterEach
     fun tearDown() {
         O5RegistrationData.allValues.forEach { O5RegistrationData.remove(it.controllerId) }
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -113,5 +131,68 @@ class O5CredentialImportViewModelTest {
         assertThat(O5RegistrationData.contains(controllerId)).isFalse()
         assertThat(vm.installedCredentials.value).isEmpty()
         verify(secureO5RegistrationStorage).removeEntry(controllerId)
+    }
+
+    // -- certificate download ----------------------------------------------------------------
+
+    private fun registrationData(controllerId: Long) = O5RegistrationData(
+        controllerId = controllerId,
+        privateKeyHex = "01020304",
+        publicKeyHex = "05060708",
+        intermediateCABase64 = "",
+        tlsCertificateBase64 = ""
+    )
+
+    @Test
+    fun `downloadCredential installs, persists and reports success on a downloaded credential`() = runTest(testDispatcher) {
+        val vm = newViewModel()
+        val controllerId = 424242L
+        vm.attestationServiceFactory = { fakeService(onFetch = { registrationData(controllerId) }) }
+        vm.ioDispatcher = testDispatcher
+
+        vm.downloadCredential()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.downloadState.value).isEqualTo(DownloadState.Success(controllerId))
+        assertThat(O5RegistrationData.contains(controllerId)).isTrue()
+        verify(secureO5RegistrationStorage).persistEntry(
+            O5RegistrationData.get(controllerId)!!,
+            O5RegistrationData.O5RegistrationSource.DOWNLOADED
+        )
+        assertThat(vm.installedCredentials.value.map { it.controllerId }).contains(controllerId)
+    }
+
+    @Test
+    fun `downloadCredential surfaces the server message and recovery hint on failure`() = runTest(testDispatcher) {
+        val vm = newViewModel()
+        vm.attestationServiceFactory = {
+            fakeService(onFetch = {
+                throw O5KeyAttestationService.AttestationException("Android not supported yet", recoverySuggestion = "Try later")
+            })
+        }
+        vm.ioDispatcher = testDispatcher
+
+        vm.downloadCredential()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.downloadState.value
+        assertThat(state).isInstanceOf(DownloadState.Failure::class.java)
+        assertThat((state as DownloadState.Failure).reason).isEqualTo("Android not supported yet")
+        assertThat(state.recovery).isEqualTo("Try later")
+        // A failed download must not install or persist anything.
+        assertThat(vm.installedCredentials.value).isEmpty()
+    }
+
+    @Test
+    fun `clearDownloadState returns to idle`() = runTest(testDispatcher) {
+        val vm = newViewModel()
+        vm.attestationServiceFactory = { fakeService(onFetch = { throw O5KeyAttestationService.AttestationException("x") }) }
+        vm.ioDispatcher = testDispatcher
+        vm.downloadCredential()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        vm.clearDownloadState()
+
+        assertThat(vm.downloadState.value).isEqualTo(DownloadState.Idle)
     }
 }

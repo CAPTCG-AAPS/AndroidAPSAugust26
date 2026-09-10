@@ -23,6 +23,11 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.kotlinx.coroutines.rx3)
 
+    // O5 certificate download talks to the OSAID key-manager over HTTPS. OkHttp is already
+    // an app dependency (see plugins/sync, core/nssdk); this only puts it on this module's
+    // own classpath, it is not a new inter-module project dependency.
+    implementation(libs.com.squareup.okhttp3.okhttp)
+
     testImplementation(project(":shared:tests"))
 
     ksp(libs.com.google.dagger.compiler)
