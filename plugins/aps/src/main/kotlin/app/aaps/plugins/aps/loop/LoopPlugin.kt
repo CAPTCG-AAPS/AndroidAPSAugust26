@@ -85,6 +85,7 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
@@ -647,28 +648,41 @@ class LoopPlugin @Inject constructor(
                         fabricPrivacy.logCustom("APSRequest")
                         // TBR request must be applied first to prevent situation where
                         // SMB was executed and zero TBR afterward failed
-                        val tbrResult = applyTBRRequest(resultAfterConstraints, profile)
-                        lastRun.tbrSetByPump = tbrResult
-                        lastRun.lastTBRRequest = lastRun.lastAPSRun
-                        if (tbrResult.enacted || tbrResult.success) {
-                            lastRun.lastTBREnact = dateUtil.now()
-                            // deliverAt is used to prevent executing too old SMB request (older than 1 min)
-                            // executing TBR may take some time thus give more time to SMB
-                            resultAfterConstraints.deliverAt = lastRun.lastTBREnact
-                            rxBus.send(EventLoopUpdateGui())
-                            if (resultAfterConstraints.isBolusRequested) {
-                                val smbResult = applySMBRequest(resultAfterConstraints)
-                                if (smbResult.enacted || smbResult.success) {
-                                    lastRun.smbSetByPump = smbResult
-                                    lastRun.lastSMBRequest = lastRun.lastAPSRun
-                                    lastRun.lastSMBEnact = dateUtil.now()
-                                    scheduleBuildAndStoreDeviceStatus("applySMBRequest")
+                        //
+                        // The temp basal and the SMB are one decision, so they are protected from
+                        // cancellation together (issue #5100). Applying the temp basal makes the pump
+                        // driver write the new temp basal into the database, which raises a new history
+                        // event; a few seconds later IobCobCalculatorPlugin stops the calculation as a
+                        // barrier before it invalidates the IOB tables. The loop runs inside that
+                        // calculation, so without this the stop could land between the temp basal and
+                        // the SMB - the temp basal programmed, the SMB the same result asked for never
+                        // sent and nothing logged. Only this pump conversation is protected (the dose
+                        // is already decided and applySMBRequest reads nothing back); CommandSMBBolus
+                        // still refuses an SMB once deliverAt is more than a minute old.
+                        withContext(NonCancellable) {
+                            val tbrResult = applyTBRRequest(resultAfterConstraints, profile)
+                            lastRun.tbrSetByPump = tbrResult
+                            lastRun.lastTBRRequest = lastRun.lastAPSRun
+                            if (tbrResult.enacted || tbrResult.success) {
+                                lastRun.lastTBREnact = dateUtil.now()
+                                // deliverAt is used to prevent executing too old SMB request (older than 1 min)
+                                // executing TBR may take some time thus give more time to SMB
+                                resultAfterConstraints.deliverAt = lastRun.lastTBREnact
+                                rxBus.send(EventLoopUpdateGui())
+                                if (resultAfterConstraints.isBolusRequested) {
+                                    val smbResult = applySMBRequest(resultAfterConstraints)
+                                    if (smbResult.enacted || smbResult.success) {
+                                        lastRun.smbSetByPump = smbResult
+                                        lastRun.lastSMBRequest = lastRun.lastAPSRun
+                                        lastRun.lastSMBEnact = dateUtil.now()
+                                        scheduleBuildAndStoreDeviceStatus("applySMBRequest")
+                                    } else {
+                                        handler?.postDelayed({ appScope.launch { invoke("tempBasalFallback", allowNotification, true) } }, 1000)
+                                    }
                                 } else {
-                                    handler?.postDelayed({ appScope.launch { invoke("tempBasalFallback", allowNotification, true) } }, 1000)
+                                    aapsLogger.debug(LTag.APS, "No SMB requested")
+                                    scheduleBuildAndStoreDeviceStatus("applyTBRRequest")
                                 }
-                            } else {
-                                aapsLogger.debug(LTag.APS, "No SMB requested")
-                                scheduleBuildAndStoreDeviceStatus("applyTBRRequest")
                             }
                         }
                         rxBus.send(EventLoopUpdateGui())
