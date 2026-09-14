@@ -81,6 +81,13 @@ dependencies {
     // pumpX2
     implementation(libs.com.jakewharton.timber)
     implementation(libs.com.github.weliem.blessed.android)
-    implementation(libs.com.github.jwoglom.pumpx2.android)
+    implementation(libs.com.github.jwoglom.pumpx2.android) {
+        // pumpx2-messages pulls bcprov-jdk14 (JDK 1.4 baseline). :plugins:eversense already ships
+        // bcprov-jdk18on and both define org.bouncycastle.**, which fails checkDuplicateClasses at
+        // dex time. Drop the legacy artifact and depend on the modern one explicitly, so this module
+        // does not rely on :plugins:eversense happening to be on the classpath.
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk14")
+    }
+    implementation(libs.org.bouncycastle.bcprov.jdk18on)
 
 }

@@ -90,11 +90,13 @@ abstract class TandemModule {
 
 
 
-    // Pump plugin registration — @IntKey range 1000–1200, see PluginsListModule for overview
+    // Pump plugin registration — @IntKey range 1000–1200, see PluginsListModule for overview.
+    // 1150: next free step after Equil (1130) and Omnipod 5 (1140), which also binds 1140 - so
+    // Tandem must not reuse 1140 or Dagger rejects the duplicate @PumpDriver map key.
     @Binds
     @PumpDriver
     @IntoMap
-    @IntKey(1140)
+    @IntKey(1150)
     abstract fun bindTandemMobiPumpPlugin(plugin: TandemMobiPumpPlugin): PluginBase
 
 
