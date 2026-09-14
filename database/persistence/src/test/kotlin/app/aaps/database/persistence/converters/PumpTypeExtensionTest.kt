@@ -16,9 +16,12 @@ internal class PumpTypeExtensionTest {
 
     @Test
     fun `entity round trip is stable for every value`() {
-        // The two enums have the same 37 values and toDb() is injective, so the mapping is a clean
-        // bijection — every entity value round-trips too.
-        InterfaceIDs.PumpType.entries.forEach { original ->
+        // Every canonical entity value round-trips. Compatibility aliases (marked "for
+        // compatibility" in InterfaceIDs.PumpType) deliberately map forward onto a canonical
+        // value and do not round-trip back to the alias, so they are excluded here. TANDEM_T_MOBI_BT
+        // is such an alias for TANDEM_MOBI_BT.
+        val compatibilityAliases = setOf(InterfaceIDs.PumpType.TANDEM_T_MOBI_BT)
+        InterfaceIDs.PumpType.entries.filterNot { it in compatibilityAliases }.forEach { original ->
             assertThat(original.fromDb().toDb()).isEqualTo(original)
         }
     }
