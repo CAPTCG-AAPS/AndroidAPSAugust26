@@ -434,14 +434,20 @@ class O5PumpPluginTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun `executeCustomCommand rejects CommandDisableSuspendAlerts when nothing is armed`() {
+    fun `executeCustomCommand silences the pod for CommandDisableSuspendAlerts even when nothing is armed`() {
+        // disableSuspendAlerts now always sends the silence command, the same as Dash - it no
+        // longer skips when suspendAlertsEnabled is false, so a stuck SUSPEND_ENDED alert is
+        // always cleared (see O5PumpPlugin.disableSuspendAlerts).
         whenever(podStateManager.suspendAlertsEnabled).thenReturn(false)
+        whenever(podStateManager.podId).thenReturn(12345L)
+        whenever(bleManager.sendCommand(any(), any())).thenReturn(Observable.empty())
 
         val result = plugin.executeCustomCommand(CommandDisableSuspendAlerts(rh))
 
         assertThat(result!!.success).isTrue()
-        assertThat(result.enacted).isFalse()
-        verify(bleManager, never()).sendCommand(any(), any())
+        assertThat(result.enacted).isTrue()
+        verify(bleManager).sendCommand(any(), any())
+        verify(podStateManager).suspendAlertsEnabled = false
     }
 
     @Test
