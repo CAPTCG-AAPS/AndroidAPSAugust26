@@ -348,6 +348,43 @@ enum class PumpType(
     TANDEM_T_FLEX(description = "Tandem t:flex", model = "t:flex", parent = TANDEM_T_SLIM),
     TANDEM_T_SLIM_G4(description = "Tandem t:slim G4", model = "t:slim G4", parent = TANDEM_T_SLIM),
     TANDEM_T_SLIM_X2(description = "Tandem t:slim X2", model = "t:slim X2", parent = TANDEM_T_SLIM),
+    TANDEM_MOBI(description = "Tandem Mobi", model = "Tandem Mobi", parent = TANDEM_T_SLIM),
+
+    TANDEM_T_SLIM_X2_BT(
+        description = "Tandem t:slim X2",
+        manufacturer = ManufacturerType.Tandem,
+        model = "t:slim X2",
+        bolusSize = 0.01,
+        specialBolusSize = null,
+        extendedBolusSettings = DoseSettings(0.01, 15, 8 * 60, 0.4),
+        pumpTempBasalType = PumpTempBasalType.Percent,
+        tbrSettings = DoseSettings(1.0, 15, 72 * 60, 0.0, 250.0),
+        specialBasalDurations = arrayOf(Capability.BasalRate_Duration15minAllowed, Capability.BasalRate_Duration30minAllowed),
+        baseBasalMinValue = 0.1,
+        baseBasalStep = 0.001,
+        baseBasalSpecialSteps = null,
+        //reservoirSize = 200,
+        pumpCapability = PumpCapability.TandemSlimCapabilities,
+        source = Source.Tandem
+    ),
+
+    TANDEM_MOBI_BT(
+        description = "Tandem Mobi",
+        manufacturer = ManufacturerType.Tandem,
+        model = "Mobi",
+        bolusSize = 0.01,
+        specialBolusSize = DoseStepSize.TandemMobiBolus,
+        extendedBolusSettings = DoseSettings(0.01, 15, 8 * 60, 0.4),
+        pumpTempBasalType = PumpTempBasalType.Percent,
+        tbrSettings = DoseSettings(5.0, 15, 72 * 60, 0.0, 250.0),
+        specialBasalDurations = arrayOf(Capability.BasalRate_Duration15minAllowed, Capability.BasalRate_Duration30minAllowed),
+        baseBasalMinValue = 0.1,
+        baseBasalStep = 0.001,
+        baseBasalSpecialSteps = DoseStepSize.TandemMobiBasal,
+        // reservoirSize = 200,
+        pumpCapability = PumpCapability.TandemMobiCapabilities,
+        source = Source.Tandem
+    ),
 
     YPSOPUMP(
         description = "YpsoPump",
@@ -531,7 +568,8 @@ enum class PumpType(
         MDI,
         VirtualPump,
         Unknown,
-        EQuil
+        EQuil,
+        Tandem
     }
 
     companion object {

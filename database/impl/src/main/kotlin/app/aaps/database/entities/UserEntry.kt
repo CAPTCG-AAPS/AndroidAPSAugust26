@@ -197,6 +197,7 @@ data class UserEntry(
         Equil,
         Medtrum,
         MDI,
+        Tandem,
         VirtualPump,
         Random,
         SMS,                //From SMS plugin

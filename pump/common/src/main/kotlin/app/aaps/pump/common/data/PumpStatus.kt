@@ -2,6 +2,8 @@ package app.aaps.pump.common.data
 
 import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
+import app.aaps.pump.common.defs.BolusData
+import app.aaps.pump.common.defs.PumpRunningState
 import app.aaps.pump.common.defs.TempBasalPair
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.Date
@@ -12,7 +14,7 @@ import java.util.Date
 abstract class PumpStatus(var pumpType: PumpType) {
 
     // connection
-    var lastDataTime: Long = 0
+    //var lastDataTime: Long = 0
     val lastConnectionFlow = MutableStateFlow(0L)
     var lastConnection: Long
         get() = lastConnectionFlow.value
@@ -22,19 +24,37 @@ abstract class PumpStatus(var pumpType: PumpType) {
     var previousConnection = 0L // here should be stored last connection of previous session (so needs to be
 
     // bolus
+    @Deprecated(message="Use Last Bolus Data instead")
     val lastBolusTimeFlow = MutableStateFlow<Date?>(null)
     var lastBolusTime: Date?
         get() = lastBolusTimeFlow.value
         set(value) {
             lastBolusTimeFlow.value = value
         }
+
+    @Deprecated(message="Use Last Bolus Data instead")
     val lastBolusAmountFlow = MutableStateFlow<Double?>(null)
     var lastBolusAmount: Double?
         get() = lastBolusAmountFlow.value
         set(value) {
             lastBolusAmountFlow.value = value
         }
-    var lastBolus: DetailedBolusInfo? = null
+
+    // last bolus data
+    val lastBolusDataFlow = MutableStateFlow<BolusData?>(null)
+    var lastBolusData: BolusData?
+        get() = lastBolusDataFlow.value
+        set(value) {
+            lastBolusDataFlow.value = value
+        }
+
+    // active bolus data
+    val activeBolusDataFlow = MutableStateFlow<BolusData?>(null)
+    var activeBolusData: BolusData?
+        get() = activeBolusDataFlow.value
+        set(value) {
+            activeBolusDataFlow.value = value
+        }
 
     // other pump settings
     val reservoirRemainingUnitsFlow = MutableStateFlow(0.0)
@@ -53,19 +73,37 @@ abstract class PumpStatus(var pumpType: PumpType) {
     var batteryVoltage: Double? = null
     var units: String? = null // Constants.MGDL or Constants.MMOL
 
+    // active bolus data
+    val pumpAddressFlow = MutableStateFlow("-")
+    var pumpAddress: String
+        get() = pumpAddressFlow.value
+        set(value) {
+            pumpAddressFlow.value = value
+        }
+
     // iob
     var iob: String? = null
 
     // basal profile
-    var basalsByHour: DoubleArray? = null
     var activeProfileName = "1"
+    open var basalsByHour: DoubleArray? = null
 
     // TDD
     var dailyTotalUnits: Double? = null
     var maxDailyTotalUnits: String? = null
 
+    var pumpRunningStateFlow = MutableStateFlow<PumpRunningState>(PumpRunningState.Unknown)
+    var pumpRunningState: PumpRunningState
+        get() = pumpRunningStateFlow.value
+        set(value) {
+            pumpRunningStateFlow.value = value
+        }
+
+
     // temp basal
-    var currentTempBasal: TempBasalPair? = null
+    var currentTempBasalFlow = MutableStateFlow<TempBasalPair?>(null)
+    var currentTempBasal: TempBasalPair?
+        get() = currentTempBasalFlow.value
         set(value) {
             if (value != null) {
                 if (value.start == null) {
@@ -76,7 +114,7 @@ abstract class PumpStatus(var pumpType: PumpType) {
             } else {
                 this.currentTempBasalEstimatedEnd = null
             }
-            field = value
+            currentTempBasalFlow.value = value
         }
 
     var currentTempBasalInternal: TempBasalPair? = null
@@ -88,10 +126,15 @@ abstract class PumpStatus(var pumpType: PumpType) {
     var pumpTime: PumpTimeDifferenceDto? = null
 
     // TODO refactor to use TempBasalPair - remove this
+    @Deprecated(message = "Use currentTempBasal instead")
     var tempBasalStart: Long? = null
+    @Deprecated(message = "Use currentTempBasal instead")
     var tempBasalAmount: Double? = 0.0
+    @Deprecated(message = "Use currentTempBasal instead")
     var tempBasalPercent: Int? = 100
+    @Deprecated(message = "Use currentTempBasal instead")
     var tempBasalDuration: Int? = 0
+    @Deprecated(message = "Use currentTempBasal instead")
     var tempBasalEnd: Long? = null
 
 // OLD - Start
@@ -106,7 +149,7 @@ abstract class PumpStatus(var pumpType: PumpType) {
 // OLD - End
 
     fun setLastCommunicationToNow() {
-        lastDataTime = System.currentTimeMillis()
+        //lastDataTime = System.currentTimeMillis()
         lastConnection = System.currentTimeMillis()
         updateLastConnectionInFragment()
     }

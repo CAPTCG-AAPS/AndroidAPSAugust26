@@ -3,15 +3,35 @@
 
     <!-- PumpCommon - Pump Abstract -->
     <string name="pump_operation_not_supported_by_pump_driver">Operation not supported by pump and/or driver.</string>
+    <string name="pump_operation_not_yet_supported_by_pump">Operation not YET supported by pump.</string>
+    <string name="common_resultok">OK</string>
+
+    <string name="pump_serial_number">Pump Serial Number</string>
+    <string name="bolus_preparing">Preparing for %1$.2f U bolus</string>
+    <string name="bolus_delivered_so_far">%1$.2f U / %2$.2f U delivered</string>
+    <string name="bolus_finished_post_bolus">Bolus finished, performing post-bolus checks</string>
+
+
+    <!-- PumpCommon - Overview fragment -->
+    <string name="pump_base_basal_rate_with_profile">(%1s) %2$.2f U/h</string>
+    <string name="pump_tbr_remaining_percent">%1$d%% (%2$d min left)</string>
+    <string name="pump_current_activity">%s   %s</string>
+    <string name="requested_by_user" comment="26 characters max for translation">Requested by user</string>
+    <string name="active_bolus_label">Active Bolus</string>
 
     <!-- PumpCommon - Pump Status -->
     <string name="pump_status_not_initialized">Not initialized</string>
     <string name="pump_status_initialized">Initialized</string>
     <string name="pump_status_encrypt">Encrypting communication</string>
+    <string name="pump_status_handshaking">Handshaking</string>
     <string name="pump_status_ready">Ready</string>
     <string name="pump_status_busy">Busy</string>
     <string name="pump_status_suspended">Suspended</string>
+    <string name="pump_status_sleeping">Sleeping</string>
+    <string name="pump_status_error_communicating_with_pump">Error Communicating With Pump</string>
     <string name="pump_status_executing_command">Executing Command</string>
+    <string name="pump_status_running">Running</string>
+    <string name="pump_status_unknown">Unknown</string>
 
     <!-- Commands -->
     <string name="pump_cmd_desc_get_settings">Get Settings</string>
@@ -24,7 +44,6 @@
     <string name="pump_cmd_desc_set_bolus">Set Bolus</string>
     <string name="pump_cmd_desc_get_bolus">Get Bolus</string>
     <string name="pump_cmd_desc_cancel_bolus">Cancel Bolus</string>
-
     <string name="pump_cmd_desc_get_remaining_insulin">Get Remaining Insulin</string>
     <string name="pump_cmd_desc_get_battery_status">Get Battery Status</string>
     <string name="pump_cmd_desc_get_time">Get Time</string>
@@ -41,6 +60,7 @@
     <string name="history_group_statistic">Statistics</string>
     <string name="history_group_unknown">Unknowns</string>
     <string name="history_group_all">All</string>
+    <string name="history_group_all_no_unknowns">All (w/o Unknown)</string>
     <string name="history_group_bolus">Boluses</string>
     <string name="history_group_prime">Prime</string>
     <string name="history_group_alarm">Alarms</string>
@@ -49,6 +69,7 @@
     <string name="history_group_other">Other</string>
     <string name="history_group_events">All Events</string>
     <string name="history_group_events_no_stat">Events (no Stat)</string>
+    <string name="history_group_integrated_loop">Integrated Loop</string>
 
     <!-- Time -->
     <string name="time_today">Today</string>
@@ -61,7 +82,62 @@
     <string name="time_last_4_days">Last 4 days</string>
     <string name="time_last_week">Last week</string>
     <string name="time_last_month">Last month</string>
+    <string name="time_over_month_ago">over Month ago</string>
+    <string name="time_now">Now</string>
+
+    <!-- BLE Config -->
+    <string name="ble_config_button_scan_start">Scan</string>
+    <string name="ble_config_scan_stop">Stop</string>
+    <string name="ble_config_scan_selected">Selected</string>
+    <string name="ble_config_scan_scanning">Scanning</string>
+    <string name="ble_config_scan_finished">Scanning finished</string>
+    <string name="ble_config_scan_error">Scanning error: %1$d</string>
+    <string name="ble_config_connected_never">Never</string>
+    <string name="ble_config_remove">Remove</string>
+
+    <!-- BLE Errors -->
+    <string name="ble_error_bt_disabled">Bluetooth disabled</string>
+    <string name="ble_error_no_bt_adapter">No Bluetooth Adapter</string>
+    <string name="ble_error_configured_pump_not_found">Configured Pump Not Found</string>
+    <string name="ble_error_pump_unreachable">Pump unreachable</string>
+    <string name="ble_error_failed_to_conn_to_ble_device">Failed To Connect To BLE Device</string>
+    <string name="ble_error_encryption_failed">Encryption Failed</string>
+    <string name="ble_error_pump_found_unbonded">Found not Bonded Pump</string>
+    <string name="ble_error_not_correct_pump">Device is not correct pump (%s)</string>
+    <string name="ble_error_pump_pair_invalid_pair_code">Pump Pair: Invalid Pair Code</string>
+
+    <!-- Pump Error -->
+    <string name="pump_settings_error_basal_profiles_not_enabled">Basal profiles/patterns setting is not enabled on pump. Enable it on the pump.</string>
+    <string name="pump_settings_error_incorrect_basal_profile_selected">Basal profile set on pump is incorrect (must be %s).</string>
+    <string name="pump_settings_error_wrong_tbr_type_set">Wrong TBR type set on pump (must be %s).</string>
+    <string name="pump_settings_error_wrong_max_bolus_set">Wrong Max Bolus set on Pump (must be %1$.2f).</string>
+    <string name="pump_settings_error_wrong_max_basal_set">Wrong Max Basal set on Pump (must be %1$.2f).</string>
+
+    <!-- Bolus -->
+    <string name="pump_bolus_normal">Normal Bolus, Amount: %.2f U</string>
+    <string name="pump_bolus_extended">Extended Bolus, Amount: %.2f U, Duration: %d min</string>
+    <string name="pump_bolus_combined">Combined Bolus, Immediate: %.2f U, Extended: %.2f U, Duration: %d min</string>
+    <string name="pump_bolus_smb">SMB Bolus, Amount: %.2f U</string>
+    <string name="pump_bolus_prime">Prime Bolus, Amount: %.2f U</string>
+
+    <!-- Commands Errors -->
+    <string name="pump_cmd_err_bolus_could_not_be_delivered_no_insulin">Bolus could not be delivered, because available insulin amount (%1$.2f) is less than bolus required (%2$.2f).</string>
+    <string name="pump_cmd_err_bolus_could_not_be_delivered">Bolus could not be delivered.</string>
+    <string name="pump_cmd_err_tbr_could_not_be_delivered">TBR could not be set.</string>
+    <string name="pump_cmd_err_basal_profile_could_not_be_set">Basal profile could not be set.</string>
+    <string name="pump_cmd_err_cant_read_tbr">Could not read current TBR.</string>
+    <string name="pump_cmd_err_cant_cancel_tbr_stop_op">Could not cancel current TBR. Stopping operation.</string>
+    <string name="pump_cmd_err_cant_cancel_tbr">Could not cancel current TBR.</string>
+
+    <!-- Pump Time -->
+    <string name="pump_time_difference_too_big">Time difference between pump and phone is over %1$d s (%2$d)</string>
+    <string name="pump_time_updated">Pump time updated</string>
+
 
     <!-- Pump History -->
+    <string name="pump_history_type">Type:</string>
+
+
+    <string name="reservoir_value">%1$.0f / %2$d U</string>
 
 </resources>

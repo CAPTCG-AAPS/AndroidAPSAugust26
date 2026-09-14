@@ -75,6 +75,7 @@ fun UserEntry.Sources.fromDb(): Sources =
         UserEntry.Sources.Equil               -> Sources.Equil
         UserEntry.Sources.Medtrum             -> Sources.Medtrum
         UserEntry.Sources.MDI                 -> Sources.MDI
+        UserEntry.Sources.Tandem              -> Sources.Tandem
         UserEntry.Sources.VirtualPump         -> Sources.VirtualPump
         UserEntry.Sources.Random              -> Sources.Random
         UserEntry.Sources.SMS                 -> Sources.SMS
@@ -163,6 +164,7 @@ fun Sources.toDb(): UserEntry.Sources =
         Sources.Equil               -> UserEntry.Sources.Equil
         Sources.Medtrum             -> UserEntry.Sources.Medtrum
         Sources.MDI                 -> UserEntry.Sources.MDI
+        Sources.Tandem              -> UserEntry.Sources.Tandem
         Sources.VirtualPump         -> UserEntry.Sources.VirtualPump
         Sources.Random              -> UserEntry.Sources.Random
         Sources.SMS                 -> UserEntry.Sources.SMS

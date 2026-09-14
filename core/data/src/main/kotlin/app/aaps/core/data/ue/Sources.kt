@@ -71,6 +71,7 @@ enum class Sources {
     Equil,
     Medtrum,
     MDI,
+    Tandem,
     VirtualPump,
     Random,
     SMS,                //From SMS plugin

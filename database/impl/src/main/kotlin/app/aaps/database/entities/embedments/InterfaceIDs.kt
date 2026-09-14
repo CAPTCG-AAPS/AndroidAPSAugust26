@@ -43,8 +43,12 @@ data class InterfaceIDs @Ignore constructor(
         MEDTRONIC_640G,
         TANDEM_T_SLIM,
         TANDEM_T_FLEX,
+        TANDEM_T_MOBI_BT, // for compatibility
+        TANDEM_MOBI,
+        TANDEM_MOBI_BT,
         TANDEM_T_SLIM_G4,
         TANDEM_T_SLIM_X2,
+        TANDEM_T_SLIM_X2_BT,
         YPSOPUMP,
         MDI,
         DIACONN_G8,

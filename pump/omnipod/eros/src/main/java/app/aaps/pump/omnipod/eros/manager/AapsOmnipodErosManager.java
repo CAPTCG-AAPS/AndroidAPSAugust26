@@ -856,7 +856,7 @@ public class AapsOmnipodErosManager {
             if (minutesRemaining > 0) {
                 reportCancelledTbr(System.currentTimeMillis() - 1000);
 
-                TempBasalPair newTempBasalPair = new TempBasalPair(previouslyRunningTempBasal.getRate(), false, minutesRemaining);
+                TempBasalPair newTempBasalPair = new TempBasalPair(previouslyRunningTempBasal.getRate(), false, minutesRemaining, null);
                 long pumpId = addSuccessToHistory(PodHistoryEntryType.SPLIT_TEMPORARY_BASAL, newTempBasalPair);
 
                 runSuspend(

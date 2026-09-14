@@ -12,11 +12,14 @@ enum class PumpDriverState(var resourceId: Int) {
     Connected(app.aaps.core.interfaces.R.string.connected), //
     Initialized(R.string.pump_status_initialized), // this is weird state that probably won't be used, since its more driver centric that communication centric
     EncryptCommunication(R.string.pump_status_encrypt), //
+    Handshaking(R.string.pump_status_handshaking),
     Ready(R.string.pump_status_ready),
     Busy(R.string.pump_status_busy), //
     Suspended(R.string.pump_status_suspended), //
+    Sleeping(R.string.pump_status_sleeping),
     ExecutingCommand(R.string.pump_status_executing_command),
     Disconnecting(app.aaps.core.interfaces.R.string.disconnecting),
+    ErrorCommunicatingWithPump(R.string.pump_status_error_communicating_with_pump),
     Disconnected(app.aaps.core.ui.R.string.disconnected);
 
     fun isConnected(): Boolean = this == Connected || this == Initialized || this == Busy || this == Suspended

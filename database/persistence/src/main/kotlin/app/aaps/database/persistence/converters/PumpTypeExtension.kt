@@ -32,7 +32,11 @@ fun InterfaceIDs.PumpType.fromDb(): PumpType =
         InterfaceIDs.PumpType.TANDEM_T_SLIM               -> PumpType.TANDEM_T_SLIM
         InterfaceIDs.PumpType.TANDEM_T_SLIM_G4            -> PumpType.TANDEM_T_SLIM_G4
         InterfaceIDs.PumpType.TANDEM_T_FLEX               -> PumpType.TANDEM_T_FLEX
+        InterfaceIDs.PumpType.TANDEM_MOBI                 -> PumpType.TANDEM_MOBI
+        InterfaceIDs.PumpType.TANDEM_MOBI_BT              -> PumpType.TANDEM_MOBI_BT
+        InterfaceIDs.PumpType.TANDEM_T_MOBI_BT            -> PumpType.TANDEM_MOBI_BT
         InterfaceIDs.PumpType.TANDEM_T_SLIM_X2            -> PumpType.TANDEM_T_SLIM_X2
+        InterfaceIDs.PumpType.TANDEM_T_SLIM_X2_BT         -> PumpType.TANDEM_T_SLIM_X2_BT
         InterfaceIDs.PumpType.YPSOPUMP                    -> PumpType.YPSOPUMP
         InterfaceIDs.PumpType.MDI                         -> PumpType.MDI
         InterfaceIDs.PumpType.USER                        -> PumpType.USER
@@ -74,7 +78,10 @@ fun PumpType.toDb(): InterfaceIDs.PumpType =
         PumpType.TANDEM_T_SLIM             -> InterfaceIDs.PumpType.TANDEM_T_SLIM
         PumpType.TANDEM_T_SLIM_G4          -> InterfaceIDs.PumpType.TANDEM_T_SLIM_G4
         PumpType.TANDEM_T_FLEX             -> InterfaceIDs.PumpType.TANDEM_T_FLEX
+        PumpType.TANDEM_MOBI               -> InterfaceIDs.PumpType.TANDEM_MOBI
+        PumpType.TANDEM_MOBI_BT            -> InterfaceIDs.PumpType.TANDEM_MOBI_BT
         PumpType.TANDEM_T_SLIM_X2          -> InterfaceIDs.PumpType.TANDEM_T_SLIM_X2
+        PumpType.TANDEM_T_SLIM_X2_BT       -> InterfaceIDs.PumpType.TANDEM_T_SLIM_X2_BT
         PumpType.YPSOPUMP                  -> InterfaceIDs.PumpType.YPSOPUMP
         PumpType.MDI                       -> InterfaceIDs.PumpType.MDI
         PumpType.USER                      -> InterfaceIDs.PumpType.USER

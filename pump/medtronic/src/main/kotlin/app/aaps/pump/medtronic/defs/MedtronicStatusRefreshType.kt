@@ -3,6 +3,7 @@ package app.aaps.pump.medtronic.defs
 /**
  * Created by andy on 6/28/18.
  */
+@Deprecated("Replaced with integrated PumpDataRefreshCapable functionality")
 enum class MedtronicStatusRefreshType(val refreshTime: Int,
                                       private val commandType: MedtronicCommandType?) {
 

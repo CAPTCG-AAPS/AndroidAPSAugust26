@@ -2,6 +2,7 @@ package app.aaps.pump.common.utils
 
 import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.interfaces.profile.Profile
+import app.aaps.core.interfaces.profile.Profile.ProfileValue
 import app.aaps.core.interfaces.pump.defs.determineCorrectBasalSize
 import java.util.Locale
 
@@ -44,6 +45,62 @@ object ProfileUtil {
 
         return stringBuilder.toString().trim()
 
+    }
+
+
+    fun getBasalProfilesDisplayableAsStringOfArrayV2(profile: Profile, pumpType: PumpType): String {
+        val stringBuilder = java.lang.StringBuilder()
+
+        val basalsAsArray = getArrayOfHourlyBasals(profile)
+
+        for (basal in basalsAsArray) {
+            stringBuilder.append(String.format(Locale.ENGLISH, "%.3f", pumpType.determineCorrectBasalSize(basal)))
+            stringBuilder.append(" ")
+        }
+
+        return stringBuilder.toString().trim()
+
+    }
+
+    fun getArrayOfHourlyBasals(profile: Profile) : DoubleArray {
+        var resultArray: DoubleArray = doubleArrayOf(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+        for (index in 0..23) {
+            resultArray[index] = findCorrectValueInProfile((index * 60* 60).toInt(), profile.getBasalValues())
+        }
+
+        return resultArray
+    }
+
+
+    private fun findCorrectValueInProfile(targetTimeAsSeconds: Int, profileValueList : Array<ProfileValue>) : Double {
+        var targetValue = 0.0
+        for (profileValue in profileValueList) {
+            if (profileValue.timeAsSeconds <= targetTimeAsSeconds) {
+                targetValue = profileValue.value
+            }
+        }
+
+        return targetValue
+    }
+
+
+
+
+
+    @JvmStatic
+    fun getProfilesByHourToString(data: DoubleArray?): String {
+        if (data == null) {
+            return " null "
+        }
+
+        val stringBuilder = StringBuilder()
+        for (value in data) {
+            stringBuilder.append(String.format("%.3f", value))
+            stringBuilder.append(" ")
+        }
+        return stringBuilder.trim().toString()
     }
 
 }

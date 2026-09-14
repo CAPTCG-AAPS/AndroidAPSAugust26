@@ -32,6 +32,17 @@ enum class DoseStepSize(private val entries: Array<DoseStepSizeEntry>) {
             DoseStepSizeEntry(10.0, Double.MAX_VALUE, 0.1)
         )
     ),
+    TandemMobiBasal(
+        arrayOf(
+            DoseStepSizeEntry(0.0, 0.1, 0.1),
+            DoseStepSizeEntry(0.1, 15.0, 0.001)
+        )
+    ),
+    TandemMobiBolus(
+        arrayOf(
+            DoseStepSizeEntry(0.05, 25.0, 0.01),
+        )
+    ),
     YpsopumpBasal(
         arrayOf(
             DoseStepSizeEntry(0.0, 1.0, 0.01),
