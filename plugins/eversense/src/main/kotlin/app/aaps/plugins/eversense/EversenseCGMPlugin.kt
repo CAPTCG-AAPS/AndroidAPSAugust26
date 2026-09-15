@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.SystemClock
 import androidx.core.content.edit
 import app.aaps.plugins.eversense.callbacks.EversenseScanCallback
 import app.aaps.plugins.eversense.callbacks.EversenseWatcher
@@ -58,6 +59,36 @@ class EversenseCGMPlugin(
     private val gattCallback = EversenseGattCallback(this, preferences)
     private val connectionLock = Any()
     private var scanner: EversenseScanner? = null
+
+    // Guards against overlapping connect attempts. connect() sets this the moment it calls
+    // connectGatt(); it is cleared when the attempt reaches a terminal state (transmitter
+    // ready, or a disconnect/failure callback - see onConnectAttemptFinished). A duplicate
+    // connect() while an attempt is still in flight would cleanUp() the in-progress GATT and
+    // restart auth from scratch. With several stacked reconnect timers all firing connect(),
+    // that kept tearing down auth before it could finish - a self-inflicted connection storm
+    // that left the transmitter unable to reconnect for many minutes after a phone reboot.
+    // connectingSince bounds the flag: a connectGatt() that never calls back (seen when the
+    // BLE radio is mid-toggle) can only block reconnection for CONNECT_IN_PROGRESS_TIMEOUT_MS.
+    @Volatile
+    private var connecting: Boolean = false
+    @Volatile
+    private var connectingSince: Long = 0L
+
+    // Called by the GATT callback when a connect attempt begins outside connect() - i.e. the
+    // 365 post-sync (status 19) path, which reuses the existing GATT via gatt.connect() rather
+    // than going through connect(). Marks the in-progress window so a stacked connect() can't
+    // tear that reuse down mid-flight.
+    fun onConnectAttemptStarted() {
+        connecting = true
+        connectingSince = SystemClock.elapsedRealtime()
+    }
+
+    // Called by the GATT callback when a connect attempt reaches a terminal state (transmitter
+    // ready, or disconnect/failure), so the next connect() is allowed to proceed immediately
+    // rather than waiting out the watchdog window.
+    fun onConnectAttemptFinished() {
+        connecting = false
+    }
 
     // Thread-safe: watchers are added/removed from main thread but iterated from bleExecutor
     val watchers: MutableList<EversenseWatcher> = CopyOnWriteArrayList()
@@ -119,7 +150,12 @@ class EversenseCGMPlugin(
     // "connected" may be lying.
     @SuppressLint("MissingPermission")
     fun forceReconnect(): Boolean {
+        // Explicit "start over": cleanUp() tears down any in-flight GATT, so clear the
+        // in-progress guard too - otherwise a stale connecting flag from the aborted attempt
+        // would make the connect() below skip itself. This is the manual/BT-recovery override,
+        // which must never be a no-op.
         gattCallback.cleanUp()
+        connecting = false
         return connect(null)
     }
 
@@ -142,6 +178,16 @@ class EversenseCGMPlugin(
                 EversenseLogger.warning(TAG, "Bluetooth is disabled — skipping connect attempt, will retry once it's back on")
                 return false
             }
+
+            // Skip if an attempt is already in flight (see the connecting field). connect() tears
+            // down the current GATT via cleanUp() before opening a new one, so letting a stacked
+            // reconnect timer through here would abort an auth that is still in progress.
+            if (connecting && SystemClock.elapsedRealtime() - connectingSince < CONNECT_IN_PROGRESS_TIMEOUT_MS) {
+                EversenseLogger.info(TAG, "Connect attempt already in progress — skipping duplicate")
+                return false
+            }
+            connecting = true
+            connectingSince = SystemClock.elapsedRealtime()
 
             gattCallback.cleanUp()
 
@@ -417,5 +463,10 @@ class EversenseCGMPlugin(
     companion object {
         private const val TAG = "EversenseCGMManager"
         private val JSON = Json { ignoreUnknownKeys = true }
+
+        // Upper bound on how long a single connect attempt may hold off duplicate attempts.
+        // A normal 365 auth completes in a few seconds; this only exists so a connectGatt()
+        // that never calls back cannot block reconnection forever.
+        private const val CONNECT_IN_PROGRESS_TIMEOUT_MS = 30_000L
     }
 }
