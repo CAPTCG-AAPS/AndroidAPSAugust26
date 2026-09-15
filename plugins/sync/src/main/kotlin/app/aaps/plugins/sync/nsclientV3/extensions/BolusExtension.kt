@@ -18,8 +18,8 @@ fun NSBolus.toBolus(insulinFallback: ICfg): BS {
             ICfg(
                 insulinLabel = it.insulinLabel, insulinEndTime = it.insulinEndTime, insulinPeakTime = it.insulinPeakTime,
                 concentration = it.concentration,
-                // Null from a build before the field existed: reconstruct from the peak.
-                isInhaled = it.isInhaled ?: InsulinType.isInhaledPeak(it.insulinPeakTime)
+                // Null from a build before the field existed: reconstruct from the old peak range / label.
+                isInhaled = it.isInhaled ?: InsulinType.isLegacyInhaled(it.insulinPeakTime, it.insulinLabel)
             )
         } ?: insulinFallback
     return BS(

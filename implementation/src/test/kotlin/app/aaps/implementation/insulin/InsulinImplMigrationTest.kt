@@ -144,8 +144,18 @@ class InsulinImplMigrationTest : TestBase() {
 
     @Test
     fun blankNicknameIsFilledFromPeakTemplate_freePeak() {
-        val sut = create(cfg(ins(peak = freePeak30Ms, nickname = null))) // 30 min matches no template → FREE_PEAK
+        // 60 min matches no template, and is not in the legacy inhaled range (10-30 min) → FREE_PEAK
+        val sut = create(cfg(ins(peak = 60L * 60_000, nickname = null)))
         assertThat(sut.insulins[0].insulinNickname).isEqualTo(rh.gs(InsulinType.OREF_FREE_PEAK.label))
+    }
+
+    @Test
+    fun blankNicknameIsFilledFromAfrezzaTemplate_legacyInhaledPeak() {
+        // An entry without the isInhaled key and with a 30 min peak was written by an older build, where
+        // 10-30 min meant inhaled. It is read back as inhaled, so it gets the Afrezza name.
+        val sut = create(cfg(ins(peak = freePeak30Ms, nickname = null)))
+        assertThat(sut.insulins[0].isInhaled).isTrue()
+        assertThat(sut.insulins[0].insulinNickname).isEqualTo(rh.gs(InsulinType.OREF_INHALED_AFREZZA.label))
     }
 
     @Test

@@ -42,19 +42,22 @@ interface HardLimits {
             AgeType.PREGNANT to 5.0..10.0
         )
 
-        // Inhaled insulin (e.g. Afrezza) acts far faster than injected insulin, so it needs its
-        // own limits - the ranges above would reject every valid inhaled profile. Both ranges are
-        // widened toward Afrezza's own clinical data (duration of action 1.5-3 h, peak effect
-        // 35-45 min) while leaving room for person-to-person variability.
+        // Inhaled insulin (e.g. Afrezza) has its own limits, because the DIA range above would
+        // reject a valid inhaled insulin. Real CGM data showed Afrezza still lowering BG 3-7 h after
+        // larger doses. With a short model (peak 10-30 min, DIA up to 3 h) IOB dropped to zero while
+        // the insulin was still working, so the loop added SMBs on top of it and BG went low late.
+        // The model peak and DIA only change how AAPS counts IOB - the real onset of Afrezza stays fast.
+        // The peak range now overlaps LIMIT_PEAK, so the inhaled identity is never taken from the
+        // peak: it is stored (ICfg.isInhaled, and the isInhaled database column).
         val LIMIT_DIA_INHALED = mapOf(
-            AgeType.CHILD to 1.0..3.0,
-            AgeType.TEENAGE to 1.0..3.0,
-            AgeType.ADULT to 1.0..3.0,
-            AgeType.RESISTANT_ADULT to 1.0..3.0,
-            AgeType.PREGNANT to 1.0..3.0
+            AgeType.CHILD to 3.0..5.0,
+            AgeType.TEENAGE to 3.0..5.0,
+            AgeType.ADULT to 3.0..5.0,
+            AgeType.RESISTANT_ADULT to 3.0..5.0,
+            AgeType.PREGNANT to 3.0..5.0
         )
         val LIMIT_PEAK = 35..120 // min
-        val LIMIT_PEAK_INHALED = 10..30 // min
+        val LIMIT_PEAK_INHALED = 30..75 // min
         val LIMIT_IC = mapOf(
             AgeType.CHILD to 2.0..100.0,
             AgeType.TEENAGE to 2.0..100.0,

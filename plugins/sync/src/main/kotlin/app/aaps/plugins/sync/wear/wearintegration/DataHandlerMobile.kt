@@ -43,7 +43,6 @@ import app.aaps.core.interfaces.db.ProcessedTbrEbData
 import app.aaps.core.interfaces.insulin.ConcentrationHelper
 // Afrezza: cartridge-to-ICfg lookup in handleAfrezzaPreCheck/doAfrezzaBolus below.
 import app.aaps.core.interfaces.insulin.InsulinManager
-import app.aaps.core.interfaces.insulin.InsulinType
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.logging.AAPSLogger
@@ -873,10 +872,8 @@ class DataHandlerMobile @Inject constructor(
             sendError("Invalid Afrezza cartridge: ${units}U")
             return
         }
-        // Find the Afrezza ICfg from InsulinManager
-        val afrezzaPeak = InsulinType.OREF_INHALED_AFREZZA.insulinPeakTime
-        val afrezzaIcfg = insulinManager.insulins.firstOrNull { it.insulinPeakTime == afrezzaPeak }
-            ?: insulinManager.insulins.firstOrNull { it.isInhaled }
+        // Find the Afrezza ICfg from InsulinManager by the stored inhaled flag (a peak match could pick Fiasp)
+        val afrezzaIcfg = insulinManager.insulins.firstOrNull { it.isInhaled }
         if (afrezzaIcfg == null) {
             sendError(rh.gs(app.aaps.core.ui.R.string.afrezza_not_configured))
             return
@@ -895,9 +892,7 @@ class DataHandlerMobile @Inject constructor(
         // happened, not a remote-deliverable action - it must never be recorded on a client (which would silently
         // desync from the master). Same category as Fill (see constructor comment).
         if (rejectIfAapsClient()) return
-        val afrezzaPeak = InsulinType.OREF_INHALED_AFREZZA.insulinPeakTime
-        val afrezzaIcfg = insulinManager.insulins.firstOrNull { it.insulinPeakTime == afrezzaPeak }
-            ?: insulinManager.insulins.firstOrNull { it.isInhaled }
+        val afrezzaIcfg = insulinManager.insulins.firstOrNull { it.isInhaled }
         if (afrezzaIcfg == null) {
             sendError(rh.gs(app.aaps.core.ui.R.string.afrezza_not_configured))
             return

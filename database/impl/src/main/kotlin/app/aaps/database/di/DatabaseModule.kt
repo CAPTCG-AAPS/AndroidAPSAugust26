@@ -318,7 +318,27 @@ open class DatabaseModule {
         }
     }
 
+    /**
+     * Adds the `isInhaled` insulin flag. Before this version the flag was guessed from the peak, which only
+     * worked while the inhaled (10-30 min) and injected (35-120 min) peak ranges did not overlap.
+     * Existing rows are marked inhaled when they have that old inhaled peak, or a label that names Afrezza
+     * (some older builds allowed Afrezza peaks above 30 min). All other rows stay injected.
+     */
+    internal val migration35to36 = object : Migration(35, 36) {
+        override fun migrate(connection: SQLiteConnection) {
+            for (table in listOf(TABLE_BOLUSES, TABLE_PROFILE_SWITCHES, TABLE_EFFECTIVE_PROFILE_SWITCHES)) {
+                connection.execSQL("ALTER TABLE `$table` ADD COLUMN `isInhaled` INTEGER NOT NULL DEFAULT 0")
+                connection.execSQL(
+                    "UPDATE `$table` SET `isInhaled` = 1 " +
+                        "WHERE (`insulinPeakTime` BETWEEN 600000 AND 1800000) OR (`insulinLabel` LIKE '%Afrezza%')"
+                )
+            }
+            // Custom indexes must be dropped on migration to pass room schema checking after upgrade
+            dropCustomIndexes(connection)
+        }
+    }
+
     /** List of all migrations for easy reply in tests. */
     @VisibleForTesting
-    internal val migrations = arrayOf(migration22to23, migration23to24, migration24to25, migration25to26, migration26to27, migration27to28, migration28to29, migration29to30, migration30to31, migration31to32, migration32to33, migration33to34, migration34to35)
+    internal val migrations = arrayOf(migration22to23, migration23to24, migration24to25, migration25to26, migration26to27, migration27to28, migration28to29, migration29to30, migration30to31, migration31to32, migration32to33, migration33to34, migration34to35, migration35to36)
 }

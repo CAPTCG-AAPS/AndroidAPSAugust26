@@ -1,15 +1,13 @@
 package app.aaps.database.persistence.converters
 
 import app.aaps.core.data.model.ICfg
-import app.aaps.core.interfaces.insulin.InsulinType
 import app.aaps.database.entities.embedments.InsulinConfiguration
 
 /**
- * [ICfg.isInhaled] has no column - the embedded [InsulinConfiguration] is shared by the boluses,
- * profileSwitches and effectiveProfileSwitches tables, and adding it would be a forward-only Room
- * migration on three tables for a value the stored peak already determines. It is reconstructed on
- * read via [InsulinType.isInhaledPeak], which is unambiguous because the inhaled and injected peak
- * ranges are disjoint, and dropped on write.
+ * [ICfg.isInhaled] is stored in its own column of the embedded [InsulinConfiguration] (boluses,
+ * profileSwitches and effectiveProfileSwitches tables). It is never re-derived from the peak, because
+ * the inhaled and injected peak ranges overlap. Rows that existed before the column was added were
+ * marked by the database migration 35 -> 36.
  */
 fun InsulinConfiguration.fromDb(): ICfg =
     ICfg(
@@ -17,7 +15,7 @@ fun InsulinConfiguration.fromDb(): ICfg =
         insulinEndTime = this.insulinEndTime,
         insulinPeakTime = this.insulinPeakTime,
         concentration = this.concentration,
-        isInhaled = InsulinType.isInhaledPeak(this.insulinPeakTime)
+        isInhaled = this.isInhaled
     )
 
 fun ICfg.toDb(): InsulinConfiguration =
@@ -25,5 +23,6 @@ fun ICfg.toDb(): InsulinConfiguration =
         insulinLabel = this.insulinLabel,
         insulinEndTime = this.insulinEndTime,
         insulinPeakTime = this.insulinPeakTime,
-        concentration = this.concentration
+        concentration = this.concentration,
+        isInhaled = this.isInhaled
     )

@@ -28,14 +28,14 @@ data class ICfg(
     /**
      * True for inhaled insulin (e.g. Afrezza).
      *
-     * Authored in the insulin editor and stored - deliberately NOT re-derived from
-     * [insulinPeakTime]. Only the factory-default Afrezza peak (15 min) matches a template exactly,
-     * so deriving it drops the inhaled identity for any peak the user picks inside the valid
-     * 10-30 min range, taking the inhaled DIA limits and the Afrezza dialog's insulin lookup with it.
+     * Authored in the insulin editor and stored everywhere (catalogue JSON, Nightscout, and the
+     * `isInhaled` database column) - deliberately NOT re-derived from [insulinPeakTime]. The inhaled
+     * peak range (30-75 min) overlaps the injected one (35-120 min), so the peak can not tell an
+     * Afrezza insulin from Fiasp.
      *
-     * Where no stored flag exists (a row read back from the database, legacy catalogue JSON, a
-     * Nightscout payload written by an older build) it is reconstructed from the peak via
-     * `InsulinType.isInhaledPeak`, which is unambiguous because the two peak ranges are disjoint.
+     * Only data written before the flag existed (legacy catalogue JSON, a Nightscout payload from an
+     * older build) is reconstructed, via `InsulinType.isLegacyInhaled`. Database rows were marked by
+     * the migration to DB version 36.
      */
     var isInhaled: Boolean = false
 ) {
@@ -130,7 +130,7 @@ data class ICfg(
             //
             // Two different floors, not one: a genuinely corrupt/sentinel config (insulinEndTime <= 0)
             // must still floor to MIN_DIA_MINUTES_SENTINEL (5h) so a real outstanding bolus is never
-            // silently zeroed. A real, even if short, DIA (e.g. Afrezza's 1.0-2.0h) only needs the much
+            // silently zeroed. A real, even if short, DIA (e.g. Afrezza's 3.0-5.0h) only needs the much
             // lower MIN_DIA_MINUTES floor to guard against literal zero/negative math inputs - flooring
             // it to 5h would wrongly stretch inhaled insulin's fast IOB taper.
             val diaFloorMinutes = if (insulinEndTime > 0) MIN_DIA_MINUTES else MIN_DIA_MINUTES_SENTINEL
@@ -151,7 +151,7 @@ data class ICfg(
     companion object {
         // Math-validity floors for iobCalcForTreatment. They only engage for corrupt/degenerate iCfg
         // and are no-ops for real configs; they are NOT the medical HardLimits.
-        private const val MIN_DIA_MINUTES = 30.0 // 0.5 h; guards a real (even short inhaled, e.g. Afrezza 1.0-2.0 h) DIA against literal zero/negative math inputs
+        private const val MIN_DIA_MINUTES = 30.0 // 0.5 h; guards a real (even short inhaled, e.g. Afrezza 3.0-5.0 h) DIA against literal zero/negative math inputs
         private const val MIN_DIA_MINUTES_SENTINEL = 300.0 // 5 h (mirrors HardLimits.MIN_DIA); floors a corrupt/sentinel config (insulinEndTime <= 0) so it never silently zeros a real bolus's IOB
         private const val MIN_PEAK_MINUTES = 1.0  // just keeps tp > 0; real peaks (incl. sub-MIN_PEAK like 30 min) pass through
     }

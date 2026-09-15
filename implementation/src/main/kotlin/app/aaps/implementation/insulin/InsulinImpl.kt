@@ -87,7 +87,7 @@ class InsulinImpl @Inject constructor(
 
     @Synchronized
     override fun addNewInsulin(newICfg: ICfg, ue: Boolean, keepName: Boolean): ICfg {
-        val template = InsulinType.fromPeak(newICfg.insulinPeakTime)
+        val template = InsulinType.fromICfg(newICfg)
         val nickname = newICfg.insulinNickname.ifBlank { rh.gs(template.label) }
         val fullName = buildFullName(
             nickname = nickname,
@@ -265,7 +265,7 @@ class InsulinImpl @Inject constructor(
                 val jsonObject = jsonElement as? JsonObject ?: return@forEach
                 val newICfg = ICfg.fromJsonObject(jsonObject)
                 if (newICfg.insulinNickname.isBlank()) {
-                    val template = InsulinType.fromPeak(newICfg.insulinPeakTime)
+                    val template = InsulinType.fromICfg(newICfg)
                     newICfg.insulinNickname = rh.gs(template.label)
                 }
                 if (!insulinAlreadyExists(newICfg)) // No Duplicated Insulin Allowed

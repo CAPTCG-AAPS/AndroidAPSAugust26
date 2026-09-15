@@ -6,39 +6,43 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 
 /**
- * [ICfg.isInhaled] has no column - see the KDoc on [fromDb]. It is reconstructed from the stored
- * peak on read, which is unambiguous because the inhaled and injected peak ranges are disjoint.
+ * [ICfg.isInhaled] is stored in its own database column - see the KDoc on [fromDb]. The inhaled and
+ * injected peak ranges overlap, so the flag must come from the column and never from the peak.
  */
 class InsulinConfigurationExtensionTest {
 
-    private fun stored(peakMinutes: Int, diaHours: Double) =
+    private fun stored(peakMinutes: Int, diaHours: Double, isInhaled: Boolean) =
         InsulinConfiguration(
             insulinLabel = "x",
             insulinEndTime = (diaHours * 3600 * 1000).toLong(),
             insulinPeakTime = peakMinutes * 60_000L,
-            concentration = 1.0
+            concentration = 1.0,
+            isInhaled = isInhaled
         )
 
-    @Test fun `an inhaled peak comes back inhaled, at any peak in its range`() {
-        for (m in intArrayOf(10, 15, 30))
-            assertThat(stored(peakMinutes = m, diaHours = 3.0).fromDb().isInhaled).isTrue()
+    @Test fun `the stored flag decides, not the peak`() {
+        // 55 min is a valid peak for both Afrezza and Fiasp.
+        assertThat(stored(peakMinutes = 55, diaHours = 4.5, isInhaled = true).fromDb().isInhaled).isTrue()
+        assertThat(stored(peakMinutes = 55, diaHours = 10.0, isInhaled = false).fromDb().isInhaled).isFalse()
     }
 
-    @Test fun `an injected peak comes back non-inhaled`() {
-        for (m in intArrayOf(35, 55, 75))
-            assertThat(stored(peakMinutes = m, diaHours = 8.0).fromDb().isInhaled).isFalse()
+    @Test fun `the flag defaults to injected`() {
+        val row = InsulinConfiguration(insulinLabel = "x", insulinEndTime = 36_000_000L, insulinPeakTime = 3_300_000L, concentration = 1.0)
+        assertThat(row.fromDb().isInhaled).isFalse()
     }
 
-    @Test fun `toDb drops the flag and keeps every stored field`() {
-        val iCfg = ICfg(insulinLabel = "Afrezza", peak = 30, dia = 3.0, concentration = 1.0, isInhaled = true)
+    @Test fun `toDb keeps every field, including the flag`() {
+        for (inhaled in listOf(true, false)) {
+            val iCfg = ICfg(insulinLabel = "Afrezza", peak = 55, dia = 4.5, concentration = 1.0, isInhaled = inhaled)
 
-        val db = iCfg.toDb()
+            val db = iCfg.toDb()
 
-        assertThat(db.insulinLabel).isEqualTo("Afrezza")
-        assertThat(db.insulinPeakTime).isEqualTo(30 * 60_000L)
-        assertThat(db.insulinEndTime).isEqualTo((3.0 * 3600 * 1000).toLong())
-        assertThat(db.concentration).isEqualTo(1.0)
-        // Round-trip restores the identity even though nothing was written for it.
-        assertThat(db.fromDb().isInhaled).isTrue()
+            assertThat(db.insulinLabel).isEqualTo("Afrezza")
+            assertThat(db.insulinPeakTime).isEqualTo(55 * 60_000L)
+            assertThat(db.insulinEndTime).isEqualTo((4.5 * 3600 * 1000).toLong())
+            assertThat(db.concentration).isEqualTo(1.0)
+            assertThat(db.isInhaled).isEqualTo(inhaled)
+            assertThat(db.fromDb().isInhaled).isEqualTo(inhaled)
+        }
     }
 }

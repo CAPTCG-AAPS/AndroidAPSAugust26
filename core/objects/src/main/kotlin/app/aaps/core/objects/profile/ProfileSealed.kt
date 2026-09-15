@@ -185,8 +185,9 @@ sealed class ProfileSealed(
         }
         iCfg?.let {
             // Todo, add check for peak and concentration, (or delegate iCfg validity check to insulinPlugin which will have this function)
-            // Inhaled insulin (e.g. Afrezza) has a much shorter DIA than injected insulin, so it
-            // is checked against its own range - see HardLimits.LIMIT_DIA_INHALED.
+            // Inhaled insulin (e.g. Afrezza) has a shorter DIA than injected insulin, so it is
+            // checked against its own range - see HardLimits.LIMIT_DIA_INHALED. isInhaled is the
+            // stored flag, never taken from the peak.
             val diaRange =
                 if (it.isInhaled) hardLimits.diaInhaledRange()
                 else hardLimits.diaRange()

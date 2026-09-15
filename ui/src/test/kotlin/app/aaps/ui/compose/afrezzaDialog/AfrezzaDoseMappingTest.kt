@@ -60,15 +60,17 @@ internal class AfrezzaDoseMappingTest {
 
     private lateinit var sut: AfrezzaDialogViewModel
 
+    // findAfrezzaIcfg() finds the insulin by the stored isInhaled flag only, never by its peak.
     private val afrezzaCfg = ICfg(
         insulinLabel = "Afrezza (Inhaled)",
-        // Must match InsulinType.OREF_INHALED_AFREZZA.insulinPeakTime (15 min) - findAfrezzaIcfg()
-        // matches on this exact peak, and 40 falls outside the 10-30 min clinical range this
-        // branch's own adjustable-range limits allow, so it never actually matched.
-        peak = 15,
-        dia = 2.5,
-        concentration = 1.0
+        peak = 55,
+        dia = 4.5,
+        concentration = 1.0,
+        isInhaled = true
     )
+
+    // Same peak as the Afrezza config above, but injected.
+    private val fiaspCfg = ICfg(insulinLabel = "Fiasp", peak = 55, dia = 10.0, concentration = 1.0)
 
     @BeforeEach
     fun setUp() {
@@ -122,6 +124,26 @@ internal class AfrezzaDoseMappingTest {
     @Test
     fun `12U cartridge is stored as 6_0`() {
         assertThat(loggedAmountFor(12)).isWithin(1e-9).of(6.0)
+    }
+
+    @Test
+    fun `Afrezza is found by the inhaled flag, not by a Fiasp with the same peak`() {
+        whenever(insulinManager.insulins).thenReturn(arrayListOf(fiaspCfg, afrezzaCfg))
+        val vm = AfrezzaDialogViewModel(
+            insulinManager, persistenceLayer, uel, dateUtil, rh,
+            aapsLogger, commandQueue, profileFunction, preferences
+        )
+        assertThat(vm.uiState.value.afrezzaIcfg).isSameInstanceAs(afrezzaCfg)
+    }
+
+    @Test
+    fun `no inhaled insulin means Afrezza is not configured, even with a 55 min Fiasp`() {
+        whenever(insulinManager.insulins).thenReturn(arrayListOf(fiaspCfg))
+        val vm = AfrezzaDialogViewModel(
+            insulinManager, persistenceLayer, uel, dateUtil, rh,
+            aapsLogger, commandQueue, profileFunction, preferences
+        )
+        assertThat(vm.uiState.value.isConfigured).isFalse()
     }
 
     @Test
