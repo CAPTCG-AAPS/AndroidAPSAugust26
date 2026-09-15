@@ -22,6 +22,7 @@ import org.mockito.kotlin.whenever
  *  - CGM_XDRIP → only when XDrip source plugin is enabled
  *  - CGM_DEX   → only when Dexcom/BYODA source plugin is enabled
  *  - CALIBRATION → when XDrip is enabled OR a non-default calibration override plugin is active
+ *  - EVERSENSE_CALIBRATION → only when the Eversense calibration source is enabled
  *  - everything else → always available
  */
 class ElementAvailabilityTest : TestBase() {
@@ -126,14 +127,28 @@ class ElementAvailabilityTest : TestBase() {
         assertThat(elementAvailability.isCalibrationOverrideActive()).isTrue()
     }
 
+    // -------- EVERSENSE_CALIBRATION --------
+
+    @Test
+    fun eversenseCalibration_isAvailable_whenEversenseSourceEnabled() {
+        whenever(eversenseCalibrationSource.isEnabled()).thenReturn(true)
+        assertThat(elementAvailability.isAvailable(ElementType.EVERSENSE_CALIBRATION)).isTrue()
+    }
+
+    @Test
+    fun eversenseCalibration_isUnavailable_whenEversenseSourceDisabled() {
+        whenever(eversenseCalibrationSource.isEnabled()).thenReturn(false)
+        assertThat(elementAvailability.isAvailable(ElementType.EVERSENSE_CALIBRATION)).isFalse()
+    }
+
     // -------- Default branch --------
 
     @Test
     fun nonGatedElementTypes_areAlwaysAvailable() {
-        // Every type except the three CGM/calibration entries falls through to `true`. Looping
+        // Every type except the gated CGM/calibration entries falls through to `true`. Looping
         // catches the case where someone adds a new entry to the gating `when` without
         // intentional defaults — this test will start failing for the new type.
-        val gated = setOf(ElementType.CGM_XDRIP, ElementType.CGM_DEX, ElementType.CALIBRATION)
+        val gated = setOf(ElementType.CGM_XDRIP, ElementType.CGM_DEX, ElementType.CALIBRATION, ElementType.EVERSENSE_CALIBRATION)
         ElementType.entries
             .filterNot { it in gated }
             .forEach { type ->
