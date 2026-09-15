@@ -5,6 +5,7 @@ import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.source.DexcomBoyda
+import app.aaps.core.interfaces.source.EversenseCalibrationSource
 import app.aaps.core.interfaces.source.XDripSource
 import app.aaps.core.interfaces.navigation.ElementType
 import app.aaps.shared.tests.TestBase
@@ -27,13 +28,14 @@ class ElementAvailabilityTest : TestBase() {
 
     @Mock lateinit var xDripSource: XDripSource
     @Mock lateinit var dexcomBoyda: DexcomBoyda
+    @Mock lateinit var eversenseCalibrationSource: EversenseCalibrationSource
     @Mock lateinit var activePlugin: ActivePlugin
 
     private lateinit var elementAvailability: ElementAvailability
 
     @BeforeEach
     fun setUp() {
-        elementAvailability = ElementAvailability(xDripSource, dexcomBoyda, activePlugin)
+        elementAvailability = ElementAvailability(xDripSource, dexcomBoyda, eversenseCalibrationSource, activePlugin)
     }
 
     // -------- CGM_XDRIP --------
