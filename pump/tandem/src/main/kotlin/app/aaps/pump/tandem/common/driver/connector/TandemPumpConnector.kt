@@ -446,8 +446,11 @@ class TandemPumpConnector @Inject constructor(var tandemPumpStatus: TandemPumpSt
         val volume = (detailedBolusInfo.insulin * 1000).toLong() // no decimals
         val bolusCarbs = 0
 
+        // pumpX2 dev (ab53ef131e) renamed BolusDeliveryHistoryLog.BolusType.FOOD1 -> NOW; both
+        // carry mask value 1, so this passes the identical bolus-type bitmask (1) into the
+        // outgoing bolus request - no behavior change from the v1.9.1 build.
         val bolusRequest = InitiateBolusRequest(volume, permissionResponseMessage.bolusId,
-                                                BolusDeliveryHistoryLog.BolusType.FOOD1.mask(),
+                                                BolusDeliveryHistoryLog.BolusType.NOW.mask(),
                                                 0, 0,
                                                 bolusCarbs, 0, 0)
 

@@ -56,7 +56,13 @@ class TandemDataConverter @Inject constructor(
 
         val bolusTypes = message.bolusType
 
-        val bolusType: BolusType = if (bolusTypes.contains(element = BolusDeliveryHistoryLog.BolusType.EXTENDED)) {
+        // pumpX2 dev (ab53ef131e) re-mapped BolusDeliveryHistoryLog.BolusType: the old
+        // FOOD1/CORRECTION/EXTENDED/FOOD2 mask was replaced by NOW/LATER/OVERRIDE/CORRECTION/
+        // CARB/EATING_SOON_MODE after cross-checking a 48k-record real-pump capture. The
+        // extended-bolus concept is now LATER (per that capture it is ported from tconnectsync
+        // and still unexercised against real pump data - verify on a real Mobi). This only
+        // chooses the AAPS bolus label for a history record, not any dosing.
+        val bolusType: BolusType = if (bolusTypes.contains(element = BolusDeliveryHistoryLog.BolusType.LATER)) {
             BolusType.EXTENDED
         } else {
             BolusType.NORMAL
