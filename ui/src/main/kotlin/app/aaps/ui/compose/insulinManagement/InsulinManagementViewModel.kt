@@ -121,7 +121,8 @@ class InsulinManagementViewModel @Inject constructor(
             val currentIndex = (if (reload) insulinManager.insulinIndex(activeICfg) else targetIndex ?: uiState.value.currentCardIndex)
                 .coerceIn(0, (insulins.size - 1).coerceAtLeast(0))
             val currentICfg = insulins.getOrNull(currentIndex)
-            val template = currentICfg?.let { cfg -> InsulinType.fromPeak(cfg.insulinPeakTime) }
+            // The stored inhaled flag decides first - see applyCardSwitch.
+            val template = currentICfg?.let { cfg -> InsulinType.fromICfg(cfg) }
             val defaultNickname = template?.let { rh.gs(it.label) } ?: ""
             val editorNickname = currentICfg?.insulinNickname?.takeIf { it.isNotBlank() } ?: defaultNickname
             val autoNameEnabled = editorNickname == defaultNickname || autoName
@@ -255,10 +256,10 @@ class InsulinManagementViewModel @Inject constructor(
     private fun applyCardSwitch(index: Int) {
         val insulins = uiState.value.insulins
         val iCfg = insulins.getOrNull(index) ?: return
-        // The stored flag is authoritative for the inhaled identity: fromPeak only matches the exact
-        // factory peak (15 min for Afrezza), so a user-chosen peak anywhere else inside the valid
-        // 10-30 min range would silently load as a non-inhaled insulin.
-        val editorTemplate = if (iCfg.isInhaled) InsulinType.OREF_INHALED_AFREZZA else InsulinType.fromPeak(iCfg.insulinPeakTime)
+        // The stored flag is authoritative for the inhaled identity: the inhaled peak range (30-75 min)
+        // overlaps the injected one, and fromPeak never returns an inhaled template, so an Afrezza
+        // insulin must not be loaded by its peak.
+        val editorTemplate = InsulinType.fromICfg(iCfg)
         val editorNickname = iCfg.insulinNickname.takeIf { it.isNotBlank() } ?: rh.gs(editorTemplate.label)
         val defaultNickname = rh.gs(editorTemplate.label)
         val autoNameEnabled = editorNickname == defaultNickname
@@ -347,13 +348,12 @@ class InsulinManagementViewModel @Inject constructor(
     }
 
     fun updateEditorPeak(peakMinutes: Int) {
-        // Inhaled insulins (e.g. Afrezza) are only recognised by fromPeak() at their exact
-        // factory-default peak (15 min for Afrezza). Re-deriving the template on every edit would
-        // drop out of the inhaled identity the moment the value moves even 1 minute within its own
-        // valid 10-30 range, silently reverting isInhaled to false and, with it, the inhaled-specific
-        // peak/DIA hard limits and the auto-generated nickname. Once editing an inhaled template,
-        // keep that identity - only non-inhaled templates re-derive from peak (this preserves the
-        // existing "drag peak to switch between Novorapid/Fiasp/Lyumjev" auto-naming behavior).
+        // fromPeak() never returns an inhaled template (the inhaled peak range 30-75 min overlaps the
+        // injected one). Re-deriving the template on every edit would silently revert isInhaled to
+        // false and, with it, the inhaled-specific peak/DIA hard limits and the auto-generated
+        // nickname. Once editing an inhaled template, keep that identity - only non-inhaled templates
+        // re-derive from peak (this preserves the existing "drag peak to switch between
+        // Novorapid/Fiasp/Lyumjev" auto-naming behavior).
         val currentTemplate = uiState.value.editorTemplate
         if (currentTemplate?.isInhaled == true) {
             _uiState.update { it.copy(editorPeakMinutes = peakMinutes) }
@@ -374,12 +374,16 @@ class InsulinManagementViewModel @Inject constructor(
         _uiState.update { it.copy(editorDiaHours = diaHours) }
     }
 
-    /** Load peak from a preset template (chips UI). Only sets peak, not DIA. */
+    /**
+     * Load peak from a preset template (chips UI). Only sets peak, not DIA - except for an inhaled
+     * preset, which also sets its DIA, because an injected DIA (5-10 h) is outside the inhaled range (3-5 h).
+     */
     fun loadPeakFromPreset(preset: InsulinType) {
         _uiState.update {
             it.copy(
                 editorTemplate = preset,
                 editorPeakMinutes = preset.iCfg.peak,
+                editorDiaHours = if (preset.isInhaled) preset.iCfg.dia else it.editorDiaHours,
                 editorNickname = rh.gs(preset.label),
                 autoNameEnabled = true
             )

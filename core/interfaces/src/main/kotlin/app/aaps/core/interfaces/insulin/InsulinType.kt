@@ -15,7 +15,7 @@ enum class InsulinType(val value: Int, val insulinEndTime: Long, val insulinPeak
     OREF_ULTRA_RAPID_ACTING(3, 8 * 3600 * 1000, 55 * 60000, R.string.ultra_rapid_oref, R.string.ultra_fast_acting_insulin_comment),
     OREF_FREE_PEAK(4, 8 * 3600 * 1000, 50 * 60000, R.string.free_peak_oref, R.string.insulin_peak_time),
     OREF_LYUMJEV(5, 8 * 3600 * 1000, 45 * 60000, R.string.lyumjev, R.string.lyumjev),
-    OREF_INHALED_AFREZZA(6, (1.5 * 3600 * 1000).toLong(), 15 * 60000L, R.string.inhaled_afrezza, R.string.inhaled_afrezza_comment, isInhaled = true);
+    OREF_INHALED_AFREZZA(6, (4.5 * 3600 * 1000).toLong(), 55 * 60000L, R.string.inhaled_afrezza, R.string.inhaled_afrezza_comment, isInhaled = true);
 
     val iCfg: ICfg
         get() = ICfg(this.name, insulinEndTime, insulinPeakTime, 1.0, isInhaled)
@@ -27,22 +27,34 @@ enum class InsulinType(val value: Int, val insulinEndTime: Long, val insulinPeak
 
         private val map = entries.associateBy(InsulinType::value)
         fun fromInt(type: Int) = map[type] ?:OREF_RAPID_ACTING
-        fun fromPeak(insulinPeakTime: Long) = values().firstOrNull {it.insulinPeakTime == insulinPeakTime} ?:OREF_FREE_PEAK
 
         /**
-         * Whether [insulinPeakTime] (milliseconds) belongs to an inhaled insulin.
-         *
-         * Only for reconstructing [ICfg.isInhaled] where no stored flag exists - a row read back from
-         * the database, legacy catalogue JSON, or a Nightscout payload from an older build. Prefer the
-         * stored `ICfg.isInhaled` everywhere else.
-         *
-         * [fromPeak] cannot answer this: it matches a peak EXACTLY and the only inhaled template sits
-         * at 15 min, so every other peak inside the valid inhaled range falls through to
-         * [OREF_FREE_PEAK]. Reconstructing from the peak is unambiguous because
-         * [HardLimits.LIMIT_PEAK_INHALED] (10..30 min) and [HardLimits.LIMIT_PEAK] (35..120 min) are
-         * disjoint.
+         * Injected template with exactly this peak, or [OREF_FREE_PEAK]. Inhaled templates are never
+         * returned: the Afrezza peak can be the same as an injected one (55 min = ultra rapid), so an
+         * inhaled insulin must be found by its stored `ICfg.isInhaled` flag, not by its peak.
          */
-        fun isInhaledPeak(insulinPeakTime: Long): Boolean =
-            (insulinPeakTime / 60_000L).toInt() in HardLimits.LIMIT_PEAK_INHALED
+        fun fromPeak(insulinPeakTime: Long) = entries.firstOrNull { !it.isInhaled && it.insulinPeakTime == insulinPeakTime } ?: OREF_FREE_PEAK
+
+        /** Template for an existing insulin: the stored inhaled flag decides first, then the peak. */
+        fun fromICfg(iCfg: ICfg) = if (iCfg.isInhaled) OREF_INHALED_AFREZZA else fromPeak(iCfg.insulinPeakTime)
+
+        /**
+         * Peak range (minutes) that inhaled insulin used before the flag was stored. Older builds only
+         * allowed 10..30 min for inhaled insulin and 35..120 min for injected insulin, so inside data
+         * written by those builds this range still tells them apart. It is NOT the current limit -
+         * see [HardLimits.LIMIT_PEAK_INHALED].
+         */
+        private val LEGACY_PEAK_INHALED = 10..30
+
+        /**
+         * Whether an insulin config that has NO stored inhaled flag is inhaled.
+         *
+         * Only for data written before the flag existed: legacy catalogue JSON or a Nightscout
+         * payload from an older build. Everything else must use the stored `ICfg.isInhaled`.
+         * Matches the old inhaled peak range, or a label that names Afrezza (some older builds
+         * allowed Afrezza peaks above 30 min).
+         */
+        fun isLegacyInhaled(insulinPeakTime: Long, insulinLabel: String): Boolean =
+            (insulinPeakTime / 60_000L).toInt() in LEGACY_PEAK_INHALED || insulinLabel.contains("Afrezza", ignoreCase = true)
     }
 }

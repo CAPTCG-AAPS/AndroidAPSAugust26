@@ -21,9 +21,9 @@ fun ICfg.Companion.fromJson(json: JSONObject): ICfg = ICfg(
     insulinEndTime = json.optLong("insulinEndTime", 0),
     insulinPeakTime = json.optLong("insulinPeakTime", 0),
     concentration = json.optDouble("concentration", 1.0),
-    // Absent for entries written before the field existed: reconstruct from the peak.
+    // Absent for entries written before the field existed: reconstruct from the old peak range / label.
     isInhaled = if (json.has("isInhaled")) json.optBoolean("isInhaled", false)
-    else InsulinType.isInhaledPeak(json.optLong("insulinPeakTime", 0))
+    else InsulinType.isLegacyInhaled(json.optLong("insulinPeakTime", 0), json.optString("insulinLabel", ""))
 
 ) .also { it.insulinNickname = json.optString("insulinNickname", "") }
 
@@ -43,9 +43,12 @@ fun ICfg.Companion.fromJsonObject(json: JsonObject): ICfg {
         insulinEndTime = json["insulinEndTime"]?.jsonPrimitive?.longOrNull ?: 0,
         insulinPeakTime = json["insulinPeakTime"]?.jsonPrimitive?.longOrNull ?: 0,
         concentration = json["concentration"]?.jsonPrimitive?.doubleOrNull ?: 1.0,
-        // Absent for catalogue entries written before the field existed: reconstruct from the peak.
+        // Absent for catalogue entries written before the field existed: reconstruct from the old peak range / label.
         isInhaled = json["isInhaled"]?.jsonPrimitive?.booleanOrNull
-            ?: InsulinType.isInhaledPeak(json["insulinPeakTime"]?.jsonPrimitive?.longOrNull ?: 0)
+            ?: InsulinType.isLegacyInhaled(
+                json["insulinPeakTime"]?.jsonPrimitive?.longOrNull ?: 0,
+                json["insulinLabel"]?.jsonPrimitive?.contentOrNull ?: ""
+            )
     )
 
     icfg.insulinNickname = json["insulinNickname"]?.jsonPrimitive?.contentOrNull ?: ""

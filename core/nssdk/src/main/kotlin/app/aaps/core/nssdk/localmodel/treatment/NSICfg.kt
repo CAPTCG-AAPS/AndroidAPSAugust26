@@ -8,6 +8,6 @@ data class NSICfg(
     val insulinEndTime: Long,
     val insulinPeakTime: Long,
     val concentration: Double,
-    /** Null in payloads from builds before the field existed - callers reconstruct from the peak. */
+    /** Null in payloads from builds before the field existed - callers use `InsulinType.isLegacyInhaled`. */
     val isInhaled: Boolean? = null
 )

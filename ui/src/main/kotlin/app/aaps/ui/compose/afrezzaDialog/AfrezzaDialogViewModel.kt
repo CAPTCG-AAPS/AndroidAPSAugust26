@@ -13,7 +13,6 @@ import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.insulin.InsulinManager
-import app.aaps.core.interfaces.insulin.InsulinType
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.logging.UserEntryLogger
@@ -78,9 +77,9 @@ class AfrezzaDialogViewModel @Inject constructor(
     }
 
     private fun findAfrezzaIcfg(): ICfg? {
-        val afrezzaPeak = InsulinType.OREF_INHALED_AFREZZA.insulinPeakTime
-        return insulinManager.insulins.firstOrNull { it.insulinPeakTime == afrezzaPeak }
-            ?: insulinManager.insulins.firstOrNull { it.isInhaled }
+        // Find it by the stored inhaled flag only. The Afrezza peak can be the same as an injected
+        // insulin (55 min = ultra rapid), so a peak match could pick Fiasp.
+        return insulinManager.insulins.firstOrNull { it.isInhaled }
     }
 
     fun selectCartridge(units: Int) {

@@ -18,37 +18,49 @@ class InsulinInhaledExtensionTest {
     private fun afrezza(peakMinutes: Int) =
         ICfg(insulinLabel = "Afrezza", peak = peakMinutes, dia = 3.0, concentration = 1.0, isInhaled = true)
 
-    // ---- InsulinType.isInhaledPeak -------------------------------------------------------------
+    // ---- InsulinType legacy detection and templates --------------------------------------------
 
-    @Test fun `isInhaledPeak covers the whole inhaled range and nothing above it`() {
-        // LIMIT_PEAK_INHALED = 10..30, LIMIT_PEAK = 35..120 - disjoint, so the peak decides alone.
+    @Test fun `isLegacyInhaled matches the old inhaled peak range or an Afrezza label`() {
+        // Older builds: inhaled 10..30 min, injected 35..120 min.
         for (m in intArrayOf(10, 15, 20, 30))
-            assertThat(InsulinType.isInhaledPeak(m * 60_000L)).isTrue()
+            assertThat(InsulinType.isLegacyInhaled(m * 60_000L, "x")).isTrue()
         for (m in intArrayOf(35, 45, 55, 75, 120))
-            assertThat(InsulinType.isInhaledPeak(m * 60_000L)).isFalse()
+            assertThat(InsulinType.isLegacyInhaled(m * 60_000L, "Fiasp")).isFalse()
+        // Some older builds allowed an Afrezza peak above 30 min.
+        assertThat(InsulinType.isLegacyInhaled(40 * 60_000L, "Afrezza (Inhaled) 40m 3h U100")).isTrue()
     }
 
-    @Test fun `the Afrezza template seeds an inhaled iCfg`() {
-        assertThat(InsulinType.OREF_INHALED_AFREZZA.iCfg.isInhaled).isTrue()
+    @Test fun `the Afrezza template seeds an inhaled iCfg at 55 min and 4_5 h`() {
+        val cfg = InsulinType.OREF_INHALED_AFREZZA.iCfg
+        assertThat(cfg.isInhaled).isTrue()
+        assertThat(cfg.peak).isEqualTo(55)
+        assertThat(cfg.dia).isEqualTo(4.5)
         assertThat(InsulinType.OREF_RAPID_ACTING.iCfg.isInhaled).isFalse()
+    }
+
+    @Test fun `fromPeak never returns the inhaled template, fromICfg uses the flag`() {
+        // Afrezza and ultra rapid share the 55 min peak.
+        assertThat(InsulinType.fromPeak(55 * 60_000L)).isEqualTo(InsulinType.OREF_ULTRA_RAPID_ACTING)
+        assertThat(InsulinType.fromICfg(afrezza(peakMinutes = 55))).isEqualTo(InsulinType.OREF_INHALED_AFREZZA)
+        assertThat(InsulinType.fromICfg(ICfg(insulinLabel = "Fiasp", peak = 55, dia = 10.0, concentration = 1.0)))
+            .isEqualTo(InsulinType.OREF_ULTRA_RAPID_ACTING)
     }
 
     // ---- catalogue round-trips -----------------------------------------------------------------
 
-    @Test fun `kotlinx round-trip preserves the flag at a non-default peak`() {
-        // Peak 30 is the case that used to break: fromPeak() only matches Afrezza's factory 15 min.
-        val restored = ICfg.fromJsonObject(afrezza(peakMinutes = 30).toJsonObject())
+    @Test fun `kotlinx round-trip preserves the flag at a peak shared with injected insulin`() {
+        val restored = ICfg.fromJsonObject(afrezza(peakMinutes = 55).toJsonObject())
 
         assertThat(restored.isInhaled).isTrue()
-        assertThat(restored.peak).isEqualTo(30)
+        assertThat(restored.peak).isEqualTo(55)
         assertThat(restored.dia).isEqualTo(3.0)
     }
 
-    @Test fun `org-json round-trip preserves the flag at a non-default peak`() {
-        val restored = ICfg.fromJson(JSONObject(afrezza(peakMinutes = 30).toJson().toString()))
+    @Test fun `org-json round-trip preserves the flag at a peak shared with injected insulin`() {
+        val restored = ICfg.fromJson(JSONObject(afrezza(peakMinutes = 55).toJson().toString()))
 
         assertThat(restored.isInhaled).isTrue()
-        assertThat(restored.peak).isEqualTo(30)
+        assertThat(restored.peak).isEqualTo(55)
     }
 
     @Test fun `a non-inhaled insulin stays non-inhaled through a round-trip`() {
@@ -58,6 +70,14 @@ class InsulinInhaledExtensionTest {
     }
 
     // ---- legacy entries, written before the field existed --------------------------------------
+
+    @Test fun `legacy entry without the key is reconstructed from an Afrezza label`() {
+        val legacy40 = Json.decodeFromString<JsonObject>(
+            """{"insulinLabel":"Afrezza (Inhaled) 40m 3h U100","insulinEndTime":10800000,"insulinPeakTime":2400000,"concentration":1.0}"""
+        )
+        assertThat(ICfg.fromJsonObject(legacy40).isInhaled).isTrue()
+        assertThat(ICfg.fromJson(JSONObject(legacy40.toString())).isInhaled).isTrue()
+    }
 
     @Test fun `legacy kotlinx entry without the key is reconstructed from the peak`() {
         val legacyInhaled = Json.decodeFromString<JsonObject>(
