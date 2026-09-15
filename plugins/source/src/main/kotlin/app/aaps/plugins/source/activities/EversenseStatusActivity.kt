@@ -155,7 +155,10 @@ class EversenseStatusActivity : AppCompatActivity(), EversenseWatcher {
             val prefs = getSharedPreferences("EversenseCGMManager", Context.MODE_PRIVATE)
             val hasStoredDevice = prefs.getString("eversense_remote_device", null) != null
             if (hasStoredDevice) {
-                ioScope.launch { eversense.connect(null) }
+                // forceReconnect() rather than connect(null): a manual Connect press is an
+                // explicit "start over" and must override the in-progress guard, so it is never
+                // silently skipped while an auto-reconnect attempt happens to be in flight.
+                ioScope.launch { eversense.forceReconnect() }
                 mainHandler.postDelayed({ updateStatus() }, 3000)
             } else {
                 showDeviceSelectionDialog()

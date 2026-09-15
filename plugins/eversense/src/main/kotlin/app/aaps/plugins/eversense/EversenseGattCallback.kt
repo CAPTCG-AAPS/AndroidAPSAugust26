@@ -58,9 +58,11 @@ class EversenseGattCallback(
         // Number of consecutive authV2flow failures before abandoning the shortcut path
         // and forcing a full re-auth (WhoAmI + fleet certificate). This handles the case
         // where the BLE stack resets (e.g. charger plug-in) and the session key is lost.
-        // A value of 3 allows transient glitches to recover without internet, while still
-        // falling back to full auth after sustained failures.
-        private const val SHORTCUT_FAIL_THRESHOLD = 3
+        // A value of 2 still lets a single transient glitch (one dropped BLE write) retry the
+        // shortcut without internet, but recovers a genuinely stale session one attempt sooner.
+        // A definitive stale-session signal (a decrypt/MAC failure) forces full re-auth
+        // immediately via disallowUseShortcut(), without waiting for this threshold at all.
+        private const val SHORTCUT_FAIL_THRESHOLD = 2
 
         // Number of consecutive full-auth (WhoAmI + DMS login + fleet cert) failures before
         // falling back to trying the shortcut again. Once disallowUseShortcut() fires, every
@@ -144,6 +146,18 @@ class EversenseGattCallback(
                 handler.postDelayed(this, 60_000L)
             }
         }
+    }
+
+    // Single reusable backoff-reconnect runnable. scheduleReconnect() cancels any pending
+    // instance before posting a new one, so only ONE backoff reconnect is ever queued at a
+    // time. Previously this was an anonymous lambda posted per call, which could not be
+    // cancelled - so every disconnect callback stacked another timer, and several firing at
+    // once opened multiple GATT clients to one transmitter (the connection storm seen after a
+    // phone reboot). reconnectAttempts is read at run time on purpose, so the log line and the
+    // plugin's own attempt counter stay in step with the latest schedule.
+    private val backoffReconnectRunnable = Runnable {
+        EversenseLogger.info(TAG, "Attempting auto-reconnect (attempt $reconnectAttempts)...")
+        plugin.connect(null)
     }
 
     // FIX 12: Tracks consecutive authV2flow failures while using the shortcut path.
@@ -272,6 +286,10 @@ class EversenseGattCallback(
                     plugin.watchers.forEach { it.onConnectionChanged(false) }
                 }
                 EversenseLogger.debug(TAG, "365 post-sync disconnect (status 19) — reusing GATT for reconnect")
+                // This reuse is itself a fresh connect attempt (it bypasses plugin.connect()),
+                // so mark the in-progress window - otherwise a stacked plugin.connect() could
+                // cleanUp() this reused GATT mid-flight.
+                plugin.onConnectAttemptStarted()
                 gatt.connect()
                 return
             }
@@ -280,6 +298,8 @@ class EversenseGattCallback(
             bluetoothGatt = null
             connected = false
             transmitterReady = false
+            // This attempt has terminated; let the scheduled backoff reconnect proceed.
+            plugin.onConnectAttemptFinished()
 
             handler.post {
                 plugin.watchers.forEach { it.onConnectionChanged(false) }
@@ -329,10 +349,11 @@ class EversenseGattCallback(
             }
         }
         EversenseLogger.info(TAG, "Scheduling auto-reconnect in ${delayMs / 1000}s (status: $status, attempt: $reconnectAttempts)")
-        handler.postDelayed({
-            EversenseLogger.info(TAG, "Attempting auto-reconnect (attempt $reconnectAttempts)...")
-            plugin.connect(null)
-        }, delayMs)
+        // Collapse stacked timers into one: cancel any pending backoff reconnect before
+        // scheduling the next, so multiple disconnect callbacks can't pile up several
+        // concurrent connect() calls (each of which would open its own GATT client).
+        handler.removeCallbacks(backoffReconnectRunnable)
+        handler.postDelayed(backoffReconnectRunnable, delayMs)
         // Also start persistent 60s retry loop in case autoConnect gives up
         handler.removeCallbacks(persistentReconnectRunnable)
         handler.postDelayed(persistentReconnectRunnable, 60_000L)
@@ -497,7 +518,12 @@ class EversenseGattCallback(
                 data = cryptoUtil.decrypt(data)
                 EversenseLogger.debug(TAG, "Decrypted data -> ${data.toHexString()}")
                 if (data.isEmpty()) {
-                    EversenseLogger.error(TAG, "Failed to decrypt data — disconnecting, will retry shortcut on next connection")
+                    // A decrypt/MAC failure means the session key no longer matches the
+                    // transmitter, so retrying the shortcut is guaranteed to fail the same way.
+                    // Force a full WhoAmI + DMS re-auth on the next connect, so we recover on the
+                    // first retry instead of waiting out SHORTCUT_FAIL_THRESHOLD auth timeouts.
+                    EversenseLogger.error(TAG, "Failed to decrypt data — session key is stale, forcing full re-auth on next connect")
+                    cryptoUtil.disallowUseShortcut()
                     gatt.disconnect()
                     return
                 }
@@ -789,6 +815,8 @@ val authSession = networkExecutor.submit<Any?> {
             }
 EversenseLogger.info(TAG, "365 transmitter ready — notifying watchers")
             transmitterReady = true
+            // Attempt finished successfully; release the in-progress guard.
+            plugin.onConnectAttemptFinished()
             handler.post { plugin.watchers.forEach { it.onTransmitterReady() } }
 
         } catch (exception: Exception) {
