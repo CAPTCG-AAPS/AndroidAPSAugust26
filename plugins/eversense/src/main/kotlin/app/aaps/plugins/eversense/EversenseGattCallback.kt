@@ -58,11 +58,11 @@ class EversenseGattCallback(
         // Number of consecutive authV2flow failures before abandoning the shortcut path
         // and forcing a full re-auth (WhoAmI + fleet certificate). This handles the case
         // where the BLE stack resets (e.g. charger plug-in) and the session key is lost.
-        // A value of 2 still lets a single transient glitch (one dropped BLE write) retry the
-        // shortcut without internet, but recovers a genuinely stale session one attempt sooner.
-        // A definitive stale-session signal (a decrypt/MAC failure) forces full re-auth
+        // A value of 3 lets transient glitches (dropped BLE writes) retry the shortcut without
+        // internet, and avoids forcing a network re-auth too eagerly during flaky BLE.
+        // A definitive stale-session signal (a decrypt/MAC failure) still forces full re-auth
         // immediately via disallowUseShortcut(), without waiting for this threshold at all.
-        private const val SHORTCUT_FAIL_THRESHOLD = 2
+        private const val SHORTCUT_FAIL_THRESHOLD = 3
 
         // Number of consecutive full-auth (WhoAmI + DMS login + fleet cert) failures before
         // falling back to trying the shortcut again. Once disallowUseShortcut() fires, every
