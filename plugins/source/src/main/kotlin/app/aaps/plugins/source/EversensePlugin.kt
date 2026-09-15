@@ -10,6 +10,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import androidx.core.content.ContextCompat
@@ -157,6 +158,39 @@ class EversensePlugin @Inject constructor(
     private var consecutiveNoSignalReadings: Int = 0
     private val NO_SIGNAL_WARNING_THRESHOLD = 3
     private val CALIBRATION_RECONNECT_TIMEOUT_MS = 30_000L
+
+    // Liveness watchdog. Android does not always deliver a disconnect callback when a BLE link
+    // dies silently (out of range, transmitter reset, radio glitch). When that happens the
+    // gattCallback's "connected" flag stays stale true, so isConnected() keeps reporting
+    // connected, the status screen shows a green check, and none of the reconnect timers fire
+    // (they only run while we believe we are disconnected). Readings simply stop with nothing
+    // noticing. This watchdog is the backstop: while we believe we are connected, if no data has
+    // arrived from the transmitter for STALE_DATA_THRESHOLD_MS, treat the link as dead and force
+    // a fresh reconnect (forceReconnect clears the stale flag). The 365 sends a reading about
+    // every 5 minutes, so 7 minutes leaves one missed cycle of slack before we act.
+    // elapsedRealtime is used for the age check because it keeps counting across deep sleep.
+    @Volatile
+    private var lastTransmitterDataAt: Long = SystemClock.elapsedRealtime()
+    private val WATCHDOG_INTERVAL_MS = 60_000L
+    private val STALE_DATA_THRESHOLD_MS = 7 * 60_000L
+    private val livenessWatchdogRunnable = object : Runnable {
+        override fun run() {
+            val stale = SystemClock.elapsedRealtime() - lastTransmitterDataAt
+            if (eversense.isConnected() && stale > STALE_DATA_THRESHOLD_MS) {
+                aapsLogger.warn(
+                    LTag.BGSOURCE,
+                    "Liveness watchdog — believed connected but no transmitter data for ${stale / 1000}s, forcing reconnect"
+                )
+                // Push the marker forward so we do not re-fire every tick while the forced
+                // reconnect is still in flight; a real reading resets it again.
+                lastTransmitterDataAt = SystemClock.elapsedRealtime()
+                ioScope.launch {
+                    eversense.forceReconnect()
+                }
+            }
+            mainHandler.postDelayed(this, WATCHDOG_INTERVAL_MS)
+        }
+    }
     private var releaseForOfficialApp: Boolean = false
     @Volatile private var placementNotificationSnoozed: Boolean = false
 
@@ -177,6 +211,9 @@ class EversensePlugin @Inject constructor(
         // Always sync credentials on startup — eversense.is365() is false until first connect
         // so we must set username/password unconditionally for new phone first-boot
         checkCredentialsNotification()
+        // Start the liveness watchdog. onStop clears it via mainHandler.removeCallbacksAndMessages.
+        lastTransmitterDataAt = SystemClock.elapsedRealtime()
+        mainHandler.postDelayed(livenessWatchdogRunnable, WATCHDOG_INTERVAL_MS)
     }
 
     override suspend fun onStop() {
@@ -493,6 +530,8 @@ class EversensePlugin @Inject constructor(
 
     override fun onTransmitterReady() {
         aapsLogger.info(LTag.BGSOURCE, "Transmitter ready — triggering fullSync")
+        // A fresh connection counts as liveness even before the first reading arrives.
+        lastTransmitterDataAt = SystemClock.elapsedRealtime()
         eversense.submitToExecutorAndSync(force = true)
     }
 
@@ -539,6 +578,8 @@ class EversensePlugin @Inject constructor(
     }
 
     override fun onCGMRead(type: EversenseType, readings: List<EversenseCGMResult>) {
+        // The transmitter is alive — reset the liveness watchdog.
+        lastTransmitterDataAt = SystemClock.elapsedRealtime()
         // Log what the BLE layer actually produced, per reading, before anything downstream can
         // filter or reshape it. The DMS uploader drops readings with no rawResponseHex and keys
         // the portal record on sensorId, and neither field is visible anywhere else in an exported
