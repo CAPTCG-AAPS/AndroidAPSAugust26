@@ -549,7 +549,12 @@ class OmnipodDashPumpPlugin @Inject constructor(
                     confirmationBeeps = false,
                     completionBeeps = false
                 ).filter { podEvent -> podEvent.isCommandSent() }
-                    .ignoreElements(),
+                    // Record the correction as a treatment, exactly like a normal bolus (line ~695)
+                    // and like the O5 driver's deliverBasalCorrection. Without this the correction is
+                    // delivered to the pod but never written via pumpSync, so it never shows as the
+                    // 0.05 U bolus the O5 pods display. pumpSyncBolusStart reuses the active command's
+                    // history id/pumpId, so it dedupes against the pod-history readback - one record.
+                    .concatMapCompletable { rxCompletable(Dispatchers.IO) { pumpSyncBolusStart(requestedInsulinAmount, BS.Type.NORMAL) } },
                 post = waitForBolusDeliveryToComplete(requestedInsulinAmount, BS.Type.NORMAL)
                     .doOnSuccess { delivered ->
                         aapsLogger.info(LTag.PUMP, "Basal correction delivered: $delivered U")
