@@ -20,4 +20,8 @@ enum class O5StringNonPreferenceKey(
     /** Non-empty once the build-time embedded credential has been seeded on this install, so
      *  it is seeded at most once and a later Remove sticks. Cleared only by a fresh install. */
     EmbeddedCredentialSeeded("AAPS.Omnipod5.embedded_credential_seeded", "", exportable = false),
+
+    /** A random id made once per install, sent when downloading a credential with a token so
+     *  the server can bind that token to this one phone. Never exported. */
+    CredentialClaimDeviceId("AAPS.Omnipod5.credential_claim_device_id", "", exportable = false),
 }
