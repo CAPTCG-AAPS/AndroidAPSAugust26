@@ -182,46 +182,19 @@ AAPS tracks two separate IOB curves at once: your **pump insulin** (its normal D
 
 ### Omnipod 5 Credential — getting one into the app
 
-An Omnipod 5 needs a credential (a controller ID plus key material) before it can pair. You can
-paste one by hand on the **Certificate Store** screen, or bake one into the build so a fresh
-install already has it. Baking it in is done with a file the build reads.
+An Omnipod 5 needs a credential (a controller ID plus key material) before it can pair. The app
+does **not** ship with one, and it never contacts Insulet.
 
-⚠️ **A credential contains a PRIVATE KEY.** Keep the file in this private repo only; never let it
-into a public branch or PR.
+**If the branch maintainer gave you a token** (the usual way): open the **Certificate Store**
+screen (Omnipod 5 → settings gear, or it opens on its own when no credential is installed), paste
+the token into the **Token** field, and tap **Download credential**. Step-by-step guide:
+[`pump/omnipod/common/BUILDER-O5-SETUP.md`](pump/omnipod/common/BUILDER-O5-SETUP.md).
 
-**The file:** `pump/omnipod/common/o5credential.txt`
+**If you already have a credential string**, paste it directly on the same Certificate Store
+screen instead.
 
-- Put one credential, or several separated by a **blank line** (a "pool").
-- Each credential is either the packed string `controllerId|privB64|pubB64|icaB64|tlsB64`, or the
-  `o5keypair` JSON object. Packed and JSON can be mixed. No blank line *inside* a credential.
-- If the file is absent, nothing is embedded and the app just expects a manual paste.
-
-**To build with it (Android Studio):**
-
-1. Project view → `pump` → `omnipod` → `common`. Create/open `o5credential.txt` **in the
-   `common` folder** (confirm the path with Copy Path/Reference → Absolute Path; a Scratch file or
-   any other folder is NOT read by the build).
-2. Paste the credential string(s), save (Ctrl+S).
-3. **File → Sync Project with Gradle Files** (required — the file is read at Gradle config time).
-4. Build the signed APK as usual.
-
-**How it behaves:**
-
-- **Fresh install** (uninstall first, or clean device): the app installs one credential
-  automatically — a random one if the file holds several — shown on the Certificate Store screen
-  with source **Built_in**. A fresh install **wipes all app data, including the pod pairing**, so
-  only do it when replacing the pod anyway.
-- **Update** over an existing app: keeps the pod and whatever credential is already installed;
-  nothing is re-seeded. (The update APK must be signed with the **same keystore** as the installed
-  app, or Android refuses it — do not uninstall to force it.)
-- **Remove** on the Certificate Store screen sticks until the next fresh install.
-
-**If a credential is ever revoked:** bake in several (a pool). A fresh install then picks a
-different, still-valid one; or drop the dead entry from `o5credential.txt` and rebuild so future
-fresh installs only draw from valid ones.
-
-Full reference (rules table, changing a credential on a live phone, where the code lives):
-[`pump/omnipod/common/O5-CREDENTIAL-README.md`](pump/omnipod/common/O5-CREDENTIAL-README.md).
+A credential stays on the phone it is first used on. Re-installing as an **update** (same
+keystore) keeps it; a **fresh install** wipes app data, so you would download or paste it again.
 
 ---
 
