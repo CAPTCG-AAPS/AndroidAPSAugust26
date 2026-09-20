@@ -4,11 +4,11 @@ This is for a **builder** who was given a **token** to run Omnipod 5 on AndroidA
 branch yourself and use the token once to download a credential into the app.
 
 ## What you need from the person who sent you here
-- Access to this repository (this branch: `July26OmnipodKtClean`).
+- Access to this repository.
 - A **token** (a long string), sent to you privately.
 
 ## 1. Get the code
-Clone or download this branch (`July26OmnipodKtClean`).
+Clone or download this repository (its default branch).
 
 ## 2. Set up to build
 - Android Studio and the normal AndroidAPS build toolchain (JDK, SDK).
