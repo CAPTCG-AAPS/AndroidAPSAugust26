@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothProfile
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.content.edit
 import app.aaps.plugins.eversense.enums.EversenseAlarm
 import app.aaps.plugins.eversense.enums.EversenseSecurityType
@@ -53,6 +54,11 @@ class EversenseGattCallback(
         private const val magicDescriptorUUID = "00002902-0000-1000-8000-00805f9b34fb"
 
         private const val WRITE_TIMEOUT_MS = 5000L
+
+        // A repeat of the very same chunk inside this window is a duplicate delivery, not new
+        // data. Real traffic never repeats byte for byte this quickly - each message carries its
+        // own encryption counter - so the window can be short.
+        private const val DUPLICATE_CHUNK_WINDOW_MS = 1000L
         private const val CALIBRATION_TIMEOUT_MS = 15000L
 
         // Number of consecutive authV2flow failures before abandoning the shortcut path
@@ -102,6 +108,11 @@ class EversenseGattCallback(
     private var chunkAccumulator: ByteArray = ByteArray(0)
     private var chunkTotalExpected: Int = 1
     private var chunkNextIndex: Int = 1
+
+    // The last raw chunk and the moment it arrived, so an identical repeat can be told apart
+    // from genuine data - see accumulateChunk().
+    private var lastChunk: ByteArray? = null
+    private var lastChunkAt: Long = 0L
 
     // FIX 2: Use AtomicReference for currentPacket to avoid the race condition where a stale
     // BLE notification could be processed against the wrong packet between assignment and write.
@@ -225,6 +236,24 @@ class EversenseGattCallback(
         bleExecutor = Executors.newSingleThreadExecutor()
         isCleaningUp = false
         EversenseLogger.info(TAG, "GATT cleaned up before reconnect")
+    }
+
+    /**
+     * Takes ownership of a GATT handle the moment it is created. [cleanUp] can only close the
+     * handle captured in [onConnectionStateChange], so a connectGatt() that never reached
+     * STATE_CONNECTED used to stay open, unreferenced, and keep delivering every notification a
+     * second time for as long as the app ran. Recording it here means the next [cleanUp] can
+     * always close it.
+     */
+    @SuppressLint("MissingPermission")
+    fun attachGatt(gatt: BluetoothGatt?) {
+        if (gatt == null) return
+        bluetoothGatt?.takeIf { it !== gatt }?.let {
+            EversenseLogger.info(TAG, "Closing an earlier GATT handle before using the new one")
+            it.disconnect()
+            it.close()
+        }
+        bluetoothGatt = gatt
     }
     @SuppressLint("MissingPermission")
     fun readRssi() {
@@ -476,6 +505,21 @@ class EversenseGattCallback(
 
         val chunkIndex = rawData[0].toInt() and 0xFF
         val totalChunks = rawData[1].toInt() and 0xFF
+
+        // The same chunk arriving twice in quick succession is a duplicate delivery - a second
+        // GATT connection feeding this one callback - not new data; every byte matches, header
+        // included. Left alone it makes a multi-chunk message impossible to assemble: chunk N
+        // always arrives twice, the repeat reads as out of sequence, and the part-built message
+        // is thrown away every time. A calibration triggers exactly such a multi-chunk read (the
+        // event log), which is how this showed up. connect() now also stops the second
+        // connection being created at all; this is the backstop for one that slips through.
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastChunkAt < DUPLICATE_CHUNK_WINDOW_MS && lastChunk?.contentEquals(rawData) == true) {
+            EversenseLogger.debug(TAG, "Ignoring chunk $chunkIndex/$totalChunks delivered twice")
+            return null
+        }
+        lastChunk = rawData
+        lastChunkAt = now
 
         if (chunkIndex == 1) {
             if (chunkNextIndex != 1) {
