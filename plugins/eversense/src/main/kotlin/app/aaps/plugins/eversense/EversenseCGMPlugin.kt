@@ -212,7 +212,7 @@ class EversenseCGMPlugin(
                 // device - for a brand-new, never-bonded device it's a well-documented way to get
                 // neither a GATT callback nor a pairing prompt, silently, indefinitely. false forces
                 // an immediate direct connection attempt instead.
-                device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+                gattCallback.attachGatt(device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE))
                 true
             } else {
                 val address = preferences.getString(StorageKeys.REMOTE_DEVICE_KEY, null) ?: run {
@@ -224,7 +224,10 @@ class EversenseCGMPlugin(
                     return false
                 }
                 EversenseLogger.info(TAG, "Reconnecting to stored device: $address")
-                remoteDevice.connectGatt(context, true, gattCallback, BluetoothDevice.TRANSPORT_LE)
+                // The handle is handed straight to the callback: autoConnect=true means Android
+                // keeps this client alive in the background, so one that is never closed goes on
+                // delivering notifications - and every one of them twice - indefinitely.
+                gattCallback.attachGatt(remoteDevice.connectGatt(context, true, gattCallback, BluetoothDevice.TRANSPORT_LE))
                 true
             }
         }
