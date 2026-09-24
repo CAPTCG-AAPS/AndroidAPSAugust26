@@ -10,6 +10,7 @@ import app.aaps.pump.omnipod.common.bledriver.pod.definition.AlarmType
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.AlertType
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.BasalProgram
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.DeliveryStatus
+import app.aaps.pump.omnipod.common.bledriver.pod.definition.PodConstants
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.PodStatus
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.SoftwareVersion
 import app.aaps.pump.omnipod.common.bledriver.pod.response.AlarmStatusResponse
@@ -338,19 +339,45 @@ class PersistedO5PodStateManager @Inject constructor(
         store()
     }
 
+    /**
+     * Logs delivered against expected basal around a status update, so basal drift can be read
+     * straight from a log file instead of being inferred. [block] applies the update; the drift
+     * before and after it show how much this one response added (`dErr`). Stays quiet until
+     * activation completes, because expected delivery is only tracked from that point on.
+     */
+    private fun logBasalTracking(block: () -> Unit) {
+        val driftBefore = if (activationProgress == ActivationProgress.COMPLETED) basalDrift else 0.0
+        block()
+        if (activationProgress == ActivationProgress.COMPLETED) {
+            logger.info(
+                LTag.PUMP,
+                "PUMP_BASAL act=%.2fU (tot=%.2fU bol=%.2fU) exp=%.4fU err=%+.4fU dErr=%+.4fU".format(
+                    basalDelivered,
+                    (podState.totalPulsesDelivered ?: 0) * PodConstants.POD_PULSE_BOLUS_UNITS,
+                    (podState.cumulativeBolusPulsesDelivered ?: 0) * PodConstants.POD_PULSE_BOLUS_UNITS,
+                    podState.basalExpected ?: 0.0,
+                    basalDrift,
+                    basalDrift - driftBefore
+                )
+            )
+        }
+    }
+
     override fun updateFromDefaultStatusResponse(response: DefaultStatusResponse) {
         val previousUpdate = podState.lastStatusResponseReceived
         val now = System.currentTimeMillis()
-        podState.totalPulsesDelivered = response.totalPulsesDelivered
-        podState.basalExpected = nextBasalExpected(previousUpdate, now)
-        podState.podStatus = response.podStatus
-        podState.deliveryStatus = response.deliveryStatus
-        podState.bolusPulsesRemaining = response.bolusPulsesRemaining
-        podState.reservoirPulsesRemaining = response.reservoirPulsesRemaining
-        podState.activeAlerts = response.activeAlerts
-        podState.minutesSinceActivation = response.minutesSinceActivation
-        podState.sequenceNumberOfLastProgrammingCommand = response.sequenceNumberOfLastProgrammingCommand
-        podState.lastStatusResponseReceived = now
+        logBasalTracking {
+            podState.totalPulsesDelivered = response.totalPulsesDelivered
+            podState.basalExpected = nextBasalExpected(previousUpdate, now)
+            podState.podStatus = response.podStatus
+            podState.deliveryStatus = response.deliveryStatus
+            podState.bolusPulsesRemaining = response.bolusPulsesRemaining
+            podState.reservoirPulsesRemaining = response.reservoirPulsesRemaining
+            podState.activeAlerts = response.activeAlerts
+            podState.minutesSinceActivation = response.minutesSinceActivation
+            podState.sequenceNumberOfLastProgrammingCommand = response.sequenceNumberOfLastProgrammingCommand
+            podState.lastStatusResponseReceived = now
+        }
         store()
     }
 
