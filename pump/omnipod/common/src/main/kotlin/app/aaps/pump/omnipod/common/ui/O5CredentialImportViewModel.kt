@@ -3,7 +3,9 @@ package app.aaps.pump.omnipod.common.ui
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.pump.omnipod.common.R
 import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5RegistrationData
 import app.aaps.pump.omnipod.common.bledriver.pod.security.SecureO5RegistrationStorage
 import app.aaps.pump.omnipod.common.keys.O5StringNonPreferenceKey
@@ -50,12 +52,13 @@ sealed class ImportResult {
 @HiltViewModel
 class O5CredentialImportViewModel @Inject constructor(
     private val secureO5RegistrationStorage: SecureO5RegistrationStorage,
-    private val preferences: Preferences
+    private val preferences: Preferences,
+    private val rh: ResourceHelper
 ) : ViewModel() {
 
     /** The credential download client. Overridable so tests can supply a fake. */
     @Stable
-    var claimClient: O5CredentialClaimClient = O5CredentialClaimClient()
+    var claimClient: O5CredentialClaimClient = O5CredentialClaimClient(rh)
 
     private val _inputText = MutableStateFlow("")
     val inputText: StateFlow<String> = _inputText
@@ -102,12 +105,12 @@ class O5CredentialImportViewModel @Inject constructor(
     fun downloadWithToken() {
         val token = _tokenInput.value.trim()
         if (token.isEmpty()) {
-            _importResult.value = ImportResult.Failure("Enter your token first")
+            _importResult.value = ImportResult.Failure(rh.gs(R.string.omnipod_common_o5_credential_error_no_token))
             return
         }
         val serverUrl = CREDENTIAL_SERVER_URL.trim()
         if (serverUrl.isEmpty()) {
-            _importResult.value = ImportResult.Failure("This build has no credential server set")
+            _importResult.value = ImportResult.Failure(rh.gs(R.string.omnipod_common_o5_credential_error_no_server))
             return
         }
         _isDownloading.value = true
@@ -133,7 +136,7 @@ class O5CredentialImportViewModel @Inject constructor(
     fun importCurrentInput() {
         val text = _inputText.value.trim()
         if (text.isEmpty()) {
-            _importResult.value = ImportResult.Failure("Paste a credential string first")
+            _importResult.value = ImportResult.Failure(rh.gs(R.string.omnipod_common_o5_credential_error_no_input))
             return
         }
         installCredential(text, clearTokenOnSuccess = false)
@@ -147,9 +150,7 @@ class O5CredentialImportViewModel @Inject constructor(
     private fun installCredential(text: String, clearTokenOnSuccess: Boolean) {
         val controllerId = O5RegistrationData.installFromText(text, O5RegistrationData.O5RegistrationSource.IMPORTED)
         if (controllerId == null) {
-            _importResult.value = ImportResult.Failure(
-                "Could not parse that credential - check it was copied completely"
-            )
+            _importResult.value = ImportResult.Failure(rh.gs(R.string.omnipod_common_o5_credential_error_parse))
             return
         }
 
@@ -157,7 +158,7 @@ class O5CredentialImportViewModel @Inject constructor(
         if (installed == null) {
             // Shouldn't happen given install() just ran for this controllerId, but guard
             // anyway rather than reporting success for something that didn't actually register.
-            _importResult.value = ImportResult.Failure("Import failed unexpectedly")
+            _importResult.value = ImportResult.Failure(rh.gs(R.string.omnipod_common_o5_credential_error_unexpected))
             return
         }
 
