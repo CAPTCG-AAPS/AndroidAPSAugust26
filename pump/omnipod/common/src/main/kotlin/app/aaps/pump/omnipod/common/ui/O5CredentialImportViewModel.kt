@@ -195,8 +195,15 @@ class O5CredentialImportViewModel @Inject constructor(
      * and the token field too when [clearTokenOnSuccess] is set.
      */
     private fun installCredential(text: String, clearTokenOnSuccess: Boolean) {
+        // Shape only, never the text itself - it is key material. Length and whether it looks
+        // like JSON is enough to tell a certificate from whatever else a page might post.
+        aapsLogger.info(
+            LTag.PUMP,
+            "O5 certificate import: ${text.length} characters, looks like JSON: ${text.startsWith("{")}"
+        )
         val controllerId = O5RegistrationData.installFromText(text, O5RegistrationData.O5RegistrationSource.IMPORTED)
         if (controllerId == null) {
+            aapsLogger.info(LTag.PUMP, "O5 certificate import: could not be parsed")
             _importResult.value = ImportResult.Failure(
                 "Could not parse that credential - check it was copied completely"
             )
@@ -205,6 +212,7 @@ class O5CredentialImportViewModel @Inject constructor(
 
         val installed = O5RegistrationData.get(controllerId)
         if (installed == null) {
+            aapsLogger.info(LTag.PUMP, "O5 certificate import: parsed but did not register")
             // Shouldn't happen given install() just ran for this controllerId, but guard
             // anyway rather than reporting success for something that didn't actually register.
             _importResult.value = ImportResult.Failure("Import failed unexpectedly")
@@ -212,6 +220,7 @@ class O5CredentialImportViewModel @Inject constructor(
         }
 
         secureO5RegistrationStorage.persistEntry(installed, O5RegistrationData.O5RegistrationSource.IMPORTED)
+        aapsLogger.info(LTag.PUMP, "O5 certificate import: installed controller 0x%08X".format(controllerId))
         _importResult.value = ImportResult.Success(controllerId)
         _inputText.value = ""
         if (clearTokenOnSuccess) _tokenInput.value = ""
