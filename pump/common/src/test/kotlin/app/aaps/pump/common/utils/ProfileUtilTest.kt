@@ -13,14 +13,14 @@ import app.aaps.shared.impl.utils.DateUtilImpl
 import app.aaps.shared.tests.TestBase
 import app.aaps.shared.tests.TestPumpPlugin
 import org.json.JSONObject
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.Mockito.anyInt
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.`when`
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class ProfileUtilTest : TestBase() {
 
@@ -41,7 +41,6 @@ class ProfileUtilTest : TestBase() {
         //unitToTest = app.aaps.pump.common.utils.ProfileUtil()
         dateUtil = DateUtilImpl(context)
         `when`(activePlugin.activePump).thenReturn(testPumpPlugin)
-        `when`(rh.gs(app.aaps.core.ui.R.string.profile_per_unit)).thenReturn("/U")
         `when`(rh.gs(app.aaps.core.ui.R.string.profile_carbs_per_unit)).thenReturn("g/U")
         `when`(rh.gs(app.aaps.core.ui.R.string.profile_ins_units_per_hour)).thenReturn("U/h")
         `when`(rh.gs(anyInt(), anyString())).thenReturn("")

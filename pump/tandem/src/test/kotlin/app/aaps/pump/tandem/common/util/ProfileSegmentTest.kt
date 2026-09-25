@@ -65,7 +65,6 @@ class ProfileSegmentTest : TestBase() {
         dateUtil = DateUtilImpl(context)
         hardLimits = HardLimitsMock(preferences, rh)
         `when`(activePlugin.activePump).thenReturn(testPumpPlugin)
-        `when`(rh.gs(app.aaps.core.ui.R.string.profile_per_unit)).thenReturn("/U")
         `when`(rh.gs(app.aaps.core.ui.R.string.profile_carbs_per_unit)).thenReturn("g/U")
         `when`(rh.gs(app.aaps.core.ui.R.string.profile_ins_units_per_hour)).thenReturn("U/h")
         `when`(rh.gs(anyInt(), anyString())).thenReturn("")

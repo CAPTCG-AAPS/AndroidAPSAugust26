@@ -2,6 +2,7 @@ package app.aaps.pump.tandem.common.comm
 
 import android.content.Context
 import android.content.SharedPreferences
+import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.interfaces.aps.APS
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.resources.ResourceHelper
@@ -74,7 +75,10 @@ class TandemDataConverterTest : TestBase() {
         //sp = SPImpl()
         //hardLimits = HardLimitsMock(sp, preferences, rh)
         `when`(activePlugin.activePump).thenReturn(testPumpPlugin)
-        `when`(rh.gs(app.aaps.core.ui.R.string.profile_per_unit)).thenReturn("/U")
+        // PumpStatus declares pumpType non-null and the Mobi plugin always sets it, but a
+        // Mockito mock hands back null through that type, so getIDPSegmentsFromProfile()
+        // fails on determineCorrectBasalSize(). Give the mock the type it would really carry.
+        `when`(tandemPumpStatus.pumpType).thenReturn(PumpType.TANDEM_MOBI_BT)
         `when`(rh.gs(app.aaps.core.ui.R.string.profile_carbs_per_unit)).thenReturn("g/U")
         `when`(rh.gs(app.aaps.core.ui.R.string.profile_ins_units_per_hour)).thenReturn("U/h")
         `when`(rh.gs(anyInt(), anyString())).thenReturn("")
