@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -21,6 +22,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +55,29 @@ fun O5CredentialImportScreen(
     val isDownloading by viewModel.isDownloading.collectAsState()
     val importResult by viewModel.importResult.collectAsState()
     val installedCredentials by viewModel.installedCredentials.collectAsState()
+
+    // Sign-in runs full screen, replacing the form until it finishes or is cancelled.
+    var showSignIn by remember { mutableStateOf(false) }
+    if (showSignIn) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            TextButton(onClick = { showSignIn = false }) { Text("Cancel") }
+            O5CredentialWebViewScreen(
+                url = KEY_MANAGER_URL,
+                onCredentialReceived = { json ->
+                    viewModel.importFromWebMessage(json)
+                    showSignIn = false
+                },
+                onError = { message ->
+                    viewModel.importFailed(message)
+                    showSignIn = false
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+        }
+        return
+    }
 
     // The key manager hands out a .o5keypair file, an extension Android has no type for, so the
     // picker is opened for any file rather than a filtered type. Reading it needs a
@@ -111,6 +138,14 @@ fun O5CredentialImportScreen(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
+        }
+
+        Button(
+            onClick = { showSignIn = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isDownloading
+        ) {
+            Text("Get a certificate (sign in)")
         }
 
         Button(
@@ -197,3 +232,9 @@ fun O5CredentialImportScreen(
         }
     }
 }
+
+/**
+ * Where a builder signs in to be issued their own Omnipod 5 certificate. Each person gets their
+ * own; it is not a shared credential, so nothing here hands out anyone else's key material.
+ */
+private const val KEY_MANAGER_URL = "https://api.osaid-keymanager.org/o5/aaps/start"

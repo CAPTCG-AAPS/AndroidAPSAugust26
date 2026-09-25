@@ -143,6 +143,25 @@ class O5CredentialImportViewModel @Inject constructor(
     }
 
     /**
+     * Installs a certificate handed back by the key manager page (see [O5CredentialWebViewScreen]).
+     * The page posts the same JSON that its downloadable file contains, so this goes through the
+     * usual install path.
+     */
+    fun importFromWebMessage(json: String) {
+        val text = json.trim()
+        if (text.isEmpty()) {
+            _importResult.value = ImportResult.Failure("The sign-in page did not return a certificate")
+            return
+        }
+        installCredential(text, clearTokenOnSuccess = false)
+    }
+
+    /** Reports a failure raised by the key manager page itself, rather than by parsing. */
+    fun importFailed(message: String) {
+        _importResult.value = ImportResult.Failure(message)
+    }
+
+    /**
      * Installs a credential from a file the user picked, for example the `.o5keypair` file the
      * key manager hands out. [readText] reads that file and runs off the main thread, since the
      * picked file can come from a slow provider such as cloud storage. The contents go through

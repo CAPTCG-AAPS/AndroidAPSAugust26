@@ -43,6 +43,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.hilt.navigation.compose)
+    // WebViewCompat.addWebMessageListener, for the key manager page to hand back a certificate.
+    implementation(libs.androidx.webkit)
     implementation(libs.kotlinx.coroutines.rx3)
 
     testImplementation(project(":shared:tests"))
