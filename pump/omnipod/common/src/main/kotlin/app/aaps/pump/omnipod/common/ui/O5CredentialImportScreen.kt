@@ -1,5 +1,7 @@
 package app.aaps.pump.omnipod.common.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -48,6 +51,19 @@ fun O5CredentialImportScreen(
     val isDownloading by viewModel.isDownloading.collectAsState()
     val importResult by viewModel.importResult.collectAsState()
     val installedCredentials by viewModel.installedCredentials.collectAsState()
+
+    // The key manager hands out a .o5keypair file, an extension Android has no type for, so the
+    // picker is opened for any file rather than a filtered type. Reading it needs a
+    // ContentResolver, which only the composable has, so the read itself is passed to the view
+    // model - which runs it off the main thread.
+    val context = LocalContext.current
+    val credentialFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            viewModel.importFromFile {
+                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader -> reader.readText() }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -97,8 +113,16 @@ fun O5CredentialImportScreen(
             )
         }
 
+        Button(
+            onClick = { credentialFilePicker.launch(arrayOf("*/*")) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isDownloading
+        ) {
+            Text("Import from file (.o5keypair)")
+        }
+
         Text(
-            text = "Paste a credential string obtained from a trusted source. This does not " +
+            text = "Or paste a credential string obtained from a trusted source. This does not " +
                 "pair with a pod by itself - it only makes the credential available for pairing.",
             style = MaterialTheme.typography.bodySmall
         )
