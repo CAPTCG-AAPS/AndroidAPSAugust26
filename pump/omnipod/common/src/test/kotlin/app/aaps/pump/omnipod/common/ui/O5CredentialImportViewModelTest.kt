@@ -5,6 +5,7 @@ import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5RegistrationData
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.ActivationProgress
 import app.aaps.pump.omnipod.common.bledriver.pod.security.SecureO5RegistrationStorage
 import app.aaps.pump.omnipod.common.bledriver.pod.state.O5PodStateManager
+import app.aaps.shared.tests.AAPSLoggerTest
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -31,7 +32,10 @@ class O5CredentialImportViewModelTest {
         on { activationProgress } doReturn ActivationProgress.NOT_STARTED
     }
 
-    private fun newViewModel() = O5CredentialImportViewModel(secureO5RegistrationStorage, preferences, podStateManager)
+    private val aapsLogger = AAPSLoggerTest()
+
+    private fun newViewModel() =
+        O5CredentialImportViewModel(secureO5RegistrationStorage, preferences, podStateManager, aapsLogger)
 
     private fun packedCredential(controllerId: Long): String {
         val privB64 = Base64.getEncoder().encodeToString(byteArrayOf(1, 2, 3, 4))

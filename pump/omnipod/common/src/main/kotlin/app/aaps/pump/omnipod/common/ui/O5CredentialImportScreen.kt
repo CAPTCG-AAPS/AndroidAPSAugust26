@@ -71,6 +71,7 @@ fun O5CredentialImportScreen(
                     viewModel.importFailed(message)
                     showSignIn = false
                 },
+                onLog = viewModel::logSignIn,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)

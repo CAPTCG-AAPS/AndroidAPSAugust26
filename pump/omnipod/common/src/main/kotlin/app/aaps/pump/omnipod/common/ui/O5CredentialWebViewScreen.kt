@@ -1,6 +1,11 @@
 package app.aaps.pump.omnipod.common.ui
 
 import android.annotation.SuppressLint
+import android.os.Message
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
@@ -21,8 +26,14 @@ import androidx.webkit.WebViewFeature
  * installs it through the normal import path, so the same formats are accepted as a pasted or
  * file-imported certificate.
  *
- * [onError] reports a device whose WebView is too old to support the bridge. The certificate can
- * still be fetched in a normal browser and brought in with "Import from file" in that case.
+ * Sign-in goes through a third-party identity provider, which opens its own window, so popups are
+ * supported and routed back into this view - a WebView drops them silently otherwise, which looks
+ * like the page opening and closing again with nothing happening.
+ *
+ * [onLog] records what the page does; the WebView writes nothing to the AAPS log by itself, so
+ * without it a sign-in that fails leaves no trace. [onError] reports a device whose WebView cannot
+ * support the bridge at all; the certificate can still be fetched in a browser and brought in with
+ * "Import from file".
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -30,10 +41,12 @@ fun O5CredentialWebViewScreen(
     url: String,
     onCredentialReceived: (String) -> Unit,
     onError: (String) -> Unit,
+    onLog: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currentOnCredentialReceived by rememberUpdatedState(onCredentialReceived)
     val currentOnError by rememberUpdatedState(onError)
+    val currentOnLog by rememberUpdatedState(onLog)
 
     AndroidView(
         modifier = modifier,
@@ -41,21 +54,72 @@ fun O5CredentialWebViewScreen(
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                // Keep navigation inside this view: the sign-in redirects through the identity
-                // provider and back, and sending that to an external browser would lose the
-                // bridge that returns the certificate.
-                webViewClient = WebViewClient()
+                // The identity provider opens its sign-in in a new window.
+                settings.setSupportMultipleWindows(true)
+
+                webViewClient = object : WebViewClient() {
+                    override fun onPageStarted(view: WebView?, pageUrl: String?, favicon: android.graphics.Bitmap?) {
+                        currentOnLog("loading $pageUrl")
+                    }
+
+                    override fun onPageFinished(view: WebView?, pageUrl: String?) {
+                        currentOnLog("loaded $pageUrl")
+                    }
+
+                    override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                        if (request?.isForMainFrame == true) {
+                            currentOnLog("failed to load ${request.url}")
+                        }
+                    }
+                }
+
+                webChromeClient = object : WebChromeClient() {
+                    /**
+                     * Routes a popup back into this same view. The sign-in window must keep the
+                     * bridge, and a second WebView would not have it.
+                     */
+                    override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+                        val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
+                        val relay = WebView(view.context)
+                        relay.webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(relayView: WebView?, request: WebResourceRequest?): Boolean {
+                                request?.url?.let {
+                                    currentOnLog("popup -> $it")
+                                    view.loadUrl(it.toString())
+                                }
+                                relay.destroy()
+                                return true
+                            }
+                        }
+                        transport.webView = relay
+                        resultMsg.sendToTarget()
+                        return true
+                    }
+
+                    override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                        consoleMessage?.let { currentOnLog("page says: ${it.message()}") }
+                        return true
+                    }
+                }
+
+                // If the page ends in a file download rather than posting over the bridge, the
+                // WebView would ignore it silently. Record it so the reason is visible.
+                setDownloadListener { downloadUrl, _, _, mimeType, _ ->
+                    currentOnLog("page tried to download $downloadUrl ($mimeType) instead of posting the certificate")
+                }
 
                 if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
                     currentOnError("This phone's WebView is too old to receive a certificate here - fetch it in a browser and use Import from file instead")
                     return@apply
                 }
 
-                WebViewCompat.addWebMessageListener(this, BRIDGE_NAME, ALLOWED_ORIGIN_RULES) { _, message, _, _, _ ->
+                WebViewCompat.addWebMessageListener(this, BRIDGE_NAME, ALLOWED_ORIGIN_RULES) { _, message, sourceOrigin, _, _ ->
+                    currentOnLog("bridge message from $sourceOrigin")
                     if (message.type == WebMessageCompat.TYPE_STRING) {
                         message.data?.let { currentOnCredentialReceived(it) }
                     }
                 }
+                currentOnLog("opening $url")
                 loadUrl(url)
             }
         }
