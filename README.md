@@ -15,13 +15,13 @@ DEV:
 
 ---
 
-## This Branch: Eversense CGM (E3 / E365) + Afrezza Inhaled Insulin + Omnipod 5 (WIP)
+## This Branch: Eversense CGM (E3 / E365) + Afrezza Inhaled Insulin + Omnipod 5
 
 This branch adds three features on top of upstream AAPS:
 
 1. **Eversense CGM integration** — direct BLE connection to Eversense E3 and E365 transmitters as a native AAPS BG source, with calibration, alarms, DMS portal sync, and (for E365) cloud upload.
 2. **Afrezza inhaled insulin support** — a second, independently-tracked insulin curve for logging Technosphere inhaled insulin doses.
-3. **Omnipod 5 pump integration (Work in Progress)** — a from-scratch Bluetooth driver for the Omnipod 5 pod. Still under active development — see the dedicated section below before using it.
+3. **Omnipod 5 pump integration** — a from-scratch Bluetooth driver for the Omnipod 5 pod, including pairing, status, and closed-loop dosing. See the dedicated section below for how to get the certificate it needs.
 
 All three are experimental, community-developed modifications. None is approved by any regulatory body. **Discuss any changes to your insulin regimen or pump with your endocrinologist before use, and always keep fingerstick meter access as a backup.**
 
@@ -171,30 +171,39 @@ AAPS tracks two separate IOB curves at once: your **pump insulin** (its normal D
 
 ---
 
-## Omnipod 5 Pump Integration (Work in Progress)
+## Omnipod 5 Pump Integration
 
-⚠️ **This integration is under active development and is NOT considered stable for real-world dosing decisions.** Pairing, status parsing, and dosing command paths exist and are being tested, but the driver has not been validated through extended real-world use.
+A Bluetooth driver for the Omnipod 5 pod, written from scratch for this branch. Pairing, pod
+status, temporary basals, boluses, and closed-loop dosing all work on a real pod. As with the rest
+of this branch, verify doses and pod status against the pod itself and read the blanket
+disclaimer near the top of this file before you use it.
 
-- Expect breaking changes between commits.
-- Verify every dose and pod status against the physical pod/PDM before trusting it.
-- Do not rely on this integration as your sole means of insulin delivery or monitoring.
-- Check the branch's commit history for the current state of Omnipod 5 support before use.
+### Omnipod 5 certificate — getting one into the app
 
-### Omnipod 5 Credential — getting one into the app
+Each pod connection is signed with a certificate (a controller ID plus key material). The app does
+**not** ship with one, and it never contacts Insulet. Everyone needs their own — treat the file
+like a password and do not share it.
 
-An Omnipod 5 needs a credential (a controller ID plus key material) before it can pair. The app
-does **not** ship with one, and it never contacts Insulet.
-
-**If the branch maintainer gave you a token** (the usual way): open the **Certificate Store**
-screen (Omnipod 5 → settings gear, or it opens on its own when no credential is installed), paste
-the token into the **Token** field, and tap **Download credential**. Step-by-step guide:
+You get one from the **Certificate Store** screen (Omnipod 5 → settings gear, or it opens on its
+own when no certificate is installed). Full step-by-step guide:
 [`pump/omnipod/common/BUILDER-O5-SETUP.md`](pump/omnipod/common/BUILDER-O5-SETUP.md).
 
-**If you already have a credential string**, paste it directly on the same Certificate Store
-screen instead.
+1. **Sign in from the app (simplest)** — tap **Get a certificate (sign in)** and sign in with
+   GitHub. The certificate comes straight back into the app. You need a GitHub account with 2FA
+   enabled and a fork of AndroidAPS. Signing in again later issues you the **same** certificate,
+   so this is also how you recover it.
+2. **Fetch it in a browser, then import the file** — use this if the in-app sign-in does not work
+   on your phone. Open <https://api.osaid-keymanager.org/o5/aaps/start>, sign in, download the
+   `.o5keypair` file, put it on the phone, then tap **Import from file (.o5keypair)**. Delete the
+   copy afterwards.
+3. **A token from the branch maintainer** — only if you were given one. Paste it into the **Token**
+   field and tap **Download credential**. A token works once, on one phone.
 
-A credential stays on the phone it is first used on. Re-installing as an **update** (same
-keystore) keeps it; a **fresh install** wipes app data, so you would download or paste it again.
+A certificate stays on the phone it was installed on. Re-installing as an **update** (same
+keystore) keeps it; a **fresh install** wipes app data, so you would fetch it again.
+
+The Certificate Store will not let you remove the certificate the active pod is using — the
+running pod needs it to keep accepting commands. Deactivate the pod first.
 
 ---
 
@@ -202,4 +211,4 @@ keystore) keeps it; a **fresh install** wipes app data, so you would download or
 
 - The Eversense connection logic is actively evolving. Check the branch's commit history for the latest state before relying on it in a real-world dosing decision.
 - The E365/official-app contention issue is a platform-level Android Bluetooth limitation (only one app can hold an active GATT connection to the transmitter at a time), not a bug specific to either app. There is no way to make two apps share the connection simultaneously for the E365.
-- Omnipod 5 pump support is a Work in Progress — see the dedicated section above.
+- Omnipod 5 needs its own certificate before it can pair — see the dedicated section above.
