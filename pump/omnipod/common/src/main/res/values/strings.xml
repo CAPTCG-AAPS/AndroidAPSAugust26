@@ -215,28 +215,4 @@
     <string name="omnipod_common_overview_firmware_version_value" comment="%1$s=firmware version, %2$s=BLE version">Firmware %1$s / Bluetooth %2$s</string>
     <string name="omnipod_common_alert_delivery_suspended">Insulin delivery is suspended</string>
     <string name="omnipod_common_overview_pod_hard_end_date">Pod Hard End</string>
-
-    <!-- Omnipod 5 Certificate Store screen: download a credential with a token, or paste one. -->
-    <string name="omnipod_common_o5_credential_title">Omnipod 5 Credential</string>
-    <string name="omnipod_common_o5_credential_token_help">Enter the token you were given to download a credential. This does not pair with a pod by itself - it only makes the credential available for pairing.</string>
-    <string name="omnipod_common_o5_credential_token_label" comment="Text field label. The token is a long code the user was sent so the app can download a pump credential.">Token</string>
-    <string name="omnipod_common_o5_credential_download">Download credential</string>
-    <string name="omnipod_common_o5_credential_downloading">Downloading…</string>
-    <string name="omnipod_common_o5_credential_paste_header">Or paste a credential string</string>
-    <string name="omnipod_common_o5_credential_paste_help">Paste a credential string obtained from a trusted source. This does not pair with a pod by itself - it only makes the credential available for pairing.</string>
-    <string name="omnipod_common_o5_credential_string_label">Credential string</string>
-    <string name="omnipod_common_o5_credential_import">Import</string>
-    <string name="omnipod_common_o5_credential_imported" comment="%1$08X=controller id in hex, for example 002A24D0">Imported credential for controller 0x%1$08X</string>
-    <string name="omnipod_common_o5_credential_installed_header">Installed credentials</string>
-    <string name="omnipod_common_o5_credential_controller" comment="%1$08X=controller id in hex, for example 002A24D0">Controller 0x%1$08X</string>
-    <string name="omnipod_common_o5_credential_remove">Remove</string>
-    <string name="omnipod_common_o5_credential_error_no_token">Enter your token first</string>
-    <string name="omnipod_common_o5_credential_error_no_server">This build has no credential server set</string>
-    <string name="omnipod_common_o5_credential_error_parse">Could not parse that credential - check it was copied completely</string>
-    <string name="omnipod_common_o5_credential_error_unexpected">Import failed unexpectedly</string>
-    <string name="omnipod_common_o5_credential_error_no_input">Paste a credential string first</string>
-    <string name="omnipod_common_o5_credential_error_unreachable">Could not reach the server. Check your Internet connection.</string>
-    <string name="omnipod_common_o5_credential_error_empty">The server did not return a credential.</string>
-    <string name="omnipod_common_o5_credential_error_http" comment="%1$d=HTTP status code, for example 403">The server refused the request (HTTP %1$d).</string>
-    <string name="omnipod_common_o5_credential_error_talking">Unexpected problem talking to the server.</string>
 </resources>

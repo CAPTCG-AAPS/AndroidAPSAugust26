@@ -1,7 +1,5 @@
 package app.aaps.pump.omnipod.common.ui
 
-import app.aaps.core.interfaces.resources.ResourceHelper
-import app.aaps.pump.omnipod.common.R
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -18,7 +16,7 @@ import java.net.URL
  *
  * Uses plain [HttpURLConnection] so the module needs no extra network dependency.
  */
-class O5CredentialClaimClient(private val rh: ResourceHelper) {
+class O5CredentialClaimClient {
 
     /** Outcome of a claim. */
     sealed class ClaimResult {
@@ -47,7 +45,7 @@ class O5CredentialClaimClient(private val rh: ResourceHelper) {
                 outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
             }
         } catch (e: Exception) {
-            return ClaimResult.Failure(rh.gs(R.string.omnipod_common_o5_credential_error_unreachable))
+            return ClaimResult.Failure("Could not reach the server. Check your Internet connection.")
         }
 
         return try {
@@ -58,18 +56,16 @@ class O5CredentialClaimClient(private val rh: ResourceHelper) {
             if (code in 200..299) {
                 val credential = json?.optString("credential").orEmpty()
                 if (credential.isBlank()) {
-                    ClaimResult.Failure(rh.gs(R.string.omnipod_common_o5_credential_error_empty))
+                    ClaimResult.Failure("The server did not return a credential.")
                 } else {
                     ClaimResult.Success(credential)
                 }
             } else {
                 val message = json?.optString("message").orEmpty()
-                ClaimResult.Failure(
-                    message.ifBlank { rh.gs(R.string.omnipod_common_o5_credential_error_http, code) }
-                )
+                ClaimResult.Failure(message.ifBlank { "The server refused the request (HTTP $code)." })
             }
         } catch (e: Exception) {
-            ClaimResult.Failure(rh.gs(R.string.omnipod_common_o5_credential_error_talking))
+            ClaimResult.Failure("Unexpected problem talking to the server.")
         } finally {
             connection.disconnect()
         }

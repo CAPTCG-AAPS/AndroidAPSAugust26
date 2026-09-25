@@ -1,6 +1,5 @@
 package app.aaps.pump.omnipod.common.ui
 
-import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5RegistrationData
 import app.aaps.pump.omnipod.common.bledriver.pod.security.SecureO5RegistrationStorage
@@ -8,8 +7,6 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.util.Base64
@@ -24,11 +21,7 @@ class O5CredentialImportViewModelTest {
     private val secureO5RegistrationStorage = mock<SecureO5RegistrationStorage>()
     private val preferences = mock<Preferences>()
 
-    /** Messages are resource-backed now; these tests only check the result type, so any
-     *  non-null string will do. */
-    private val rh = mock<ResourceHelper> { on { gs(any<Int>()) } doReturn "message" }
-
-    private fun newViewModel() = O5CredentialImportViewModel(secureO5RegistrationStorage, preferences, rh)
+    private fun newViewModel() = O5CredentialImportViewModel(secureO5RegistrationStorage, preferences)
 
     private fun packedCredential(controllerId: Long): String {
         val privB64 = Base64.getEncoder().encodeToString(byteArrayOf(1, 2, 3, 4))

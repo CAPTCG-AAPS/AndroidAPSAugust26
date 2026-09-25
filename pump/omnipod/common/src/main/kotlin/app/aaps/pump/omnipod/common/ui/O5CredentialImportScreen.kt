@@ -20,12 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import app.aaps.core.interfaces.resources.ResourceHelper
-import app.aaps.pump.omnipod.common.R
 import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5RegistrationData
 
 /**
@@ -59,7 +57,7 @@ fun O5CredentialImportScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = stringResource(R.string.omnipod_common_o5_credential_title),
+            text = "Omnipod 5 Credential",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -67,13 +65,14 @@ fun O5CredentialImportScreen(
         // Token download path - shown only when this build points at a token server.
         if (viewModel.tokenDownloadAvailable) {
             Text(
-                text = stringResource(R.string.omnipod_common_o5_credential_token_help),
+                text = "Enter the token you were given to download a credential. This does not " +
+                    "pair with a pod by itself - it only makes the credential available for pairing.",
                 style = MaterialTheme.typography.bodySmall
             )
             OutlinedTextField(
                 value = tokenInput,
                 onValueChange = viewModel::onTokenChanged,
-                label = { Text(stringResource(R.string.omnipod_common_o5_credential_token_label)) },
+                label = { Text("Token") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
@@ -87,31 +86,27 @@ fun O5CredentialImportScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isDownloading
             ) {
-                Text(
-                    stringResource(
-                        if (isDownloading) R.string.omnipod_common_o5_credential_downloading
-                        else R.string.omnipod_common_o5_credential_download
-                    )
-                )
+                Text(if (isDownloading) "Downloading…" else "Download credential")
             }
 
             HorizontalDivider()
             Text(
-                text = stringResource(R.string.omnipod_common_o5_credential_paste_header),
+                text = "Or paste a credential string",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
         }
 
         Text(
-            text = stringResource(R.string.omnipod_common_o5_credential_paste_help),
+            text = "Paste a credential string obtained from a trusted source. This does not " +
+                "pair with a pod by itself - it only makes the credential available for pairing.",
             style = MaterialTheme.typography.bodySmall
         )
 
         OutlinedTextField(
             value = inputText,
             onValueChange = viewModel::onInputChanged,
-            label = { Text(stringResource(R.string.omnipod_common_o5_credential_string_label)) },
+            label = { Text("Credential string") },
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 180.dp),
@@ -121,7 +116,7 @@ fun O5CredentialImportScreen(
 
         when (val result = importResult) {
             is ImportResult.Success -> Text(
-                text = stringResource(R.string.omnipod_common_o5_credential_imported, result.controllerId),
+                text = "Imported credential for controller 0x%08X".format(result.controllerId),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -140,12 +135,12 @@ fun O5CredentialImportScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = !isDownloading
         ) {
-            Text(stringResource(R.string.omnipod_common_o5_credential_import))
+            Text("Import")
         }
 
         if (installedCredentials.isNotEmpty()) {
             Text(
-                text = stringResource(R.string.omnipod_common_o5_credential_installed_header),
+                text = "Installed credentials",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -160,7 +155,7 @@ fun O5CredentialImportScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = stringResource(R.string.omnipod_common_o5_credential_controller, row.controllerId),
+                                    text = "Controller 0x%08X".format(row.controllerId),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
@@ -169,7 +164,7 @@ fun O5CredentialImportScreen(
                                 )
                             }
                             TextButton(onClick = { viewModel.removeCredential(row.controllerId) }) {
-                                Text(stringResource(R.string.omnipod_common_o5_credential_remove))
+                                Text("Remove")
                             }
                         }
                     }
