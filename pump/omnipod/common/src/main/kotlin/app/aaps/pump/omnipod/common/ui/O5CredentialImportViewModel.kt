@@ -143,6 +143,23 @@ class O5CredentialImportViewModel @Inject constructor(
     }
 
     /**
+     * Installs a credential from a file the user picked, for example the `.o5keypair` file the
+     * key manager hands out. [readText] reads that file and runs off the main thread, since the
+     * picked file can come from a slow provider such as cloud storage. The contents go through
+     * the same install path as a pasted credential, so both formats are accepted.
+     */
+    fun importFromFile(readText: () -> String?) {
+        viewModelScope.launch {
+            val text = withContext(Dispatchers.IO) { runCatching(readText).getOrNull() }
+            if (text.isNullOrBlank()) {
+                _importResult.value = ImportResult.Failure("Could not read that file")
+                return@launch
+            }
+            installCredential(text.trim(), clearTokenOnSuccess = false)
+        }
+    }
+
+    /**
      * Shared install path for both a pasted credential and a downloaded one. Parses [text],
      * persists it (encrypted), and reports the result. Clears the paste field on success,
      * and the token field too when [clearTokenOnSuccess] is set.
