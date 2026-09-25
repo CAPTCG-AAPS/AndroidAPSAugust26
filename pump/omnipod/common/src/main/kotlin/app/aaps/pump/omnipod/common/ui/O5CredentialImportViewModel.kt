@@ -3,6 +3,8 @@ package app.aaps.pump.omnipod.common.ui
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5RegistrationData
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.ActivationProgress
@@ -53,8 +55,17 @@ sealed class ImportResult {
 class O5CredentialImportViewModel @Inject constructor(
     private val secureO5RegistrationStorage: SecureO5RegistrationStorage,
     private val preferences: Preferences,
-    private val podStateManager: O5PodStateManager
+    private val podStateManager: O5PodStateManager,
+    private val aapsLogger: AAPSLogger
 ) : ViewModel() {
+
+    /**
+     * Records what the certificate sign-in page does. The WebView itself writes nothing to the
+     * AAPS log, so without this a failed sign-in leaves no trace to diagnose.
+     */
+    fun logSignIn(message: String) {
+        aapsLogger.info(LTag.PUMP, "O5 certificate sign-in: $message")
+    }
 
     /** The credential download client. Overridable so tests can supply a fake. */
     @Stable
