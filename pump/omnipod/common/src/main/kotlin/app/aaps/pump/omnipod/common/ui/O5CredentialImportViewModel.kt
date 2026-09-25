@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.pump.omnipod.common.bledriver.comm.pair.O5RegistrationData
+import app.aaps.pump.omnipod.common.bledriver.pod.definition.ActivationProgress
 import app.aaps.pump.omnipod.common.bledriver.pod.security.SecureO5RegistrationStorage
+import app.aaps.pump.omnipod.common.bledriver.pod.state.O5PodStateManager
 import app.aaps.pump.omnipod.common.keys.O5StringNonPreferenceKey
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +52,8 @@ sealed class ImportResult {
 @HiltViewModel
 class O5CredentialImportViewModel @Inject constructor(
     private val secureO5RegistrationStorage: SecureO5RegistrationStorage,
-    private val preferences: Preferences
+    private val preferences: Preferences,
+    private val podStateManager: O5PodStateManager
 ) : ViewModel() {
 
     /** The credential download client. Overridable so tests can supply a fake. */
@@ -168,8 +171,25 @@ class O5CredentialImportViewModel @Inject constructor(
         refreshInstalledCredentials()
     }
 
+    /**
+     * True when [controllerId] is the identity the currently active pod was paired with.
+     * Removing that credential would leave the running pod with no way to authenticate, so
+     * the Certificate Store must refuse it. Any other credential is safe to remove, which is
+     * the common case - an unused or replaced one sitting alongside the active one. Both rows
+     * look alike on screen (they are all "Imported"), so the guard has to be in code.
+     */
+    private fun isInUseByActivePod(controllerId: Long): Boolean =
+        podStateManager.activationProgress == ActivationProgress.COMPLETED &&
+            podStateManager.controllerId == controllerId
+
     /** Removes a credential from both the in-memory registry and persisted storage. */
     fun removeCredential(controllerId: Long) {
+        if (isInUseByActivePod(controllerId)) {
+            _importResult.value = ImportResult.Failure(
+                "That credential is in use by the active pod - deactivate the pod first"
+            )
+            return
+        }
         O5RegistrationData.remove(controllerId)
         secureO5RegistrationStorage.removeEntry(controllerId)
         refreshInstalledCredentials()
