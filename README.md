@@ -186,7 +186,7 @@ like a password and do not share it.
 
 You get one from the **Certificate Store** screen (Omnipod 5 → settings gear, or it opens on its
 own when no certificate is installed). Full step-by-step guide:
-[`pump/omnipod/common/BUILDER-O5-SETUP.md`](pump/omnipod/common/BUILDER-O5-SETUP.md).
+[pump/omnipod/common/BUILDER-O5-SETUP.md](pump/omnipod/common/BUILDER-O5-SETUP.md).
 
 1. **Sign in from the app (simplest)** — tap **Get a certificate (sign in)** and sign in with
    GitHub. The certificate comes straight back into the app. You need a GitHub account with 2FA
