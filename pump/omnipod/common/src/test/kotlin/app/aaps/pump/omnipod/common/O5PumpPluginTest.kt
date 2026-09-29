@@ -15,6 +15,7 @@ import app.aaps.core.interfaces.notifications.NotificationId
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.queue.CustomCommand
 import app.aaps.pump.omnipod.common.bledriver.comm.O5BleManager
+import app.aaps.pump.omnipod.common.bledriver.pod.command.base.Command
 import app.aaps.pump.omnipod.common.bledriver.event.PodEvent
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.ActivationProgress
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.AlarmType
@@ -22,6 +23,7 @@ import app.aaps.pump.omnipod.common.bledriver.pod.definition.AlertType
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.DeliveryStatus
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.PodStatus
 import app.aaps.pump.omnipod.common.bledriver.pod.state.O5PodStateManager
+import app.aaps.pump.omnipod.common.keys.OmnipodBooleanPreferenceKey
 import app.aaps.pump.omnipod.common.queue.command.CommandDeactivatePod
 import app.aaps.pump.omnipod.common.queue.command.CommandDeliverBasalCorrection
 import app.aaps.pump.omnipod.common.queue.command.CommandDisableSuspendAlerts
@@ -42,6 +44,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.eq
@@ -893,6 +896,32 @@ class O5PumpPluginTest : TestBaseWithProfile() {
 
         // Only the temp basal command itself, no resolution round trip.
         verify(bleManager, times(1)).sendCommand(any(), any())
+    }
+
+    // -- bolus cancel ---------------------------------------------------------------------------
+
+    private fun cancelBolusBeepType(bolusBeepsEnabled: Boolean): String {
+        whenever(podStateManager.podId).thenReturn(12345L)
+        whenever(preferences.get(OmnipodBooleanPreferenceKey.BolusBeepsEnabled)).thenReturn(bolusBeepsEnabled)
+        whenever(bleManager.connect()).thenReturn(Observable.empty())
+        whenever(bleManager.sendCommand(any(), any())).thenReturn(Observable.empty())
+
+        plugin.cancelBolus().blockingAwait()
+
+        val sent = argumentCaptor<Command>()
+        verify(bleManager).sendCommand(sent.capture(), any())
+        return sent.firstValue.toString()
+    }
+
+    @Test
+    fun `cancelBolus is silent when bolus beeps are switched off`() {
+        // StopDeliveryCommand defaults to LONG_SINGLE_BEEP, so the pod beeped on every cancel.
+        assertThat(cancelBolusBeepType(false)).contains("beepType=SILENT")
+    }
+
+    @Test
+    fun `cancelBolus beeps when bolus beeps are switched on`() {
+        assertThat(cancelBolusBeepType(true)).contains("beepType=LONG_SINGLE_BEEP")
     }
 
     // -- basal profile writes -----------------------------------------------------------------

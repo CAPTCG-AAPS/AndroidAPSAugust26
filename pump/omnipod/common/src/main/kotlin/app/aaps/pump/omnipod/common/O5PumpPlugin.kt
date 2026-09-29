@@ -1016,12 +1016,28 @@ class O5PumpPlugin @Inject constructor(
         )
     }
 
-    private fun cancelBolus(): Completable = ensureConnected().andThen(Completable.defer {
+    /**
+     * Stops a bolus that is still running.
+     *
+     * Internal (rather than private) to allow unit testing within this module.
+     */
+    internal fun cancelBolus(): Completable = ensureConnected().andThen(Completable.defer {
+        // StopDeliveryCommand defaults its beep to LONG_SINGLE_BEEP, so cancelling a bolus beeped
+        // even with bolus beeps switched off. Honour the preference, the same way
+        // cancelActiveTempBasal() does for the temp-basal stop and the way Dash gates its own
+        // stop-bolus beep. Like Dash, this reads the bolus setting even for an SMB: the SMB
+        // setting covers delivering one, and a cancel is a user-visible event either way.
+        val bolusBeep = if (preferences.get(OmnipodBooleanPreferenceKey.BolusBeepsEnabled)) {
+            BeepType.LONG_SINGLE_BEEP
+        } else {
+            BeepType.SILENT
+        }
         val cmd = StopDeliveryCommand.Builder()
             .setUniqueId(requirePodId())
             .setSequenceNumber(podStateManager.msgSequenceNumber.toShort())
             .setNonce(FIXED_NONCE)
             .setDeliveryType(StopDeliveryCommand.DeliveryType.BOLUS)
+            .setBeepType(bolusBeep)
             .build()
         bleManager.sendCommand(cmd, DefaultStatusResponse::class).ignoreElements()
     })
