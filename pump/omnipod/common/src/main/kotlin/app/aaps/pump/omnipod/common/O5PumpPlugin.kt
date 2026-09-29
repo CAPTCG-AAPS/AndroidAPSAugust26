@@ -350,10 +350,14 @@ class O5PumpPlugin @Inject constructor(
      * Records a zero-rate temporary basal while the pod is not delivering, so AAPS stops
      * counting the basal program as insulin that actually went in.
      *
-     * Without this, a faulted, deactivated or not-yet-activated pod leaves AAPS believing the
-     * basal program is still running. Insulin on board then includes insulin the pod never
-     * delivered, and the loop corrects less than it should. Mirrors what the Dash driver does
-     * in `OmnipodDashPumpPlugin.checkPodKaput` and `createFakeTBRWhenNoActivePod`.
+     * Without this, a faulted, deactivated, suspended or not-yet-activated pod leaves AAPS
+     * believing the basal program is still running. Insulin on board then includes insulin the
+     * pod never delivered, and the loop corrects less than it should. Mirrors what the Dash
+     * driver does in `OmnipodDashPumpPlugin.checkPodKaput`, `createFakeTBRWhenNoActivePod` and
+     * `suspendDeliveryIfActive` - the three places it covers between them.
+     *
+     * Suspension is included because `Pump.isSuspended` only stops the loop from dosing; it does
+     * not stop AAPS from counting the basal program as insulin that went in.
      *
      * The zero basal is written for a whole pod lifetime, and re-checked on every status poll:
      * if a zero temporary basal is already running, nothing is written, so repeated polls do
@@ -363,7 +367,8 @@ class O5PumpPlugin @Inject constructor(
      */
     internal suspend fun syncStoppedDelivery() {
         val delivering = podStateManager.activationProgress == ActivationProgress.COMPLETED &&
-            !podStateManager.isPodKaput
+            !podStateManager.isPodKaput &&
+            !podStateManager.deliverySuspended
         val runningTempBasal = pumpSync.expectedPumpState().temporaryBasal
         if (delivering) {
             // A pod is delivering again, so end our own zero basal if it somehow outlived the
@@ -738,9 +743,14 @@ class O5PumpPlugin @Inject constructor(
             podStateManager.pendingDoseCommand = null
             notificationManager.post(NotificationId.PROFILE_SET_OK, app.aaps.core.ui.R.string.profile_set_ok)
             disableSuspendAlerts()
+            // Delivery is running again - end a zero basal left over from an earlier failure.
+            syncStoppedDelivery()
             pumpEnactResultProvider.get().success(true).enacted(true)
         } catch (e: Exception) {
             aapsLogger.error(LTag.PUMP, "Error in O5 setNewBasalProfile", e)
+            // The pod was suspended to write the new program and the write did not go through,
+            // so it may still be suspended. Record that no insulin is being delivered.
+            syncStoppedDelivery()
             notifyUncertain(NotificationId.FAILED_UPDATE_PROFILE, rh.gs(R.string.omnipod_5_error_setting_basal_profile_might_have_failed))
             pumpEnactResultProvider.get().success(false).enacted(false)
         }
@@ -1149,7 +1159,7 @@ class O5PumpPlugin @Inject constructor(
             is CommandDeactivatePod   -> deactivatePod()
             is CommandSilenceAlerts   -> silenceAlerts()
             is CommandResumeDelivery  -> runBlocking { resumeOrHandleTimeChange() }
-            is CommandSuspendDelivery -> suspendDelivery()
+            is CommandSuspendDelivery -> runBlocking { suspendDelivery() }
             is CommandPlayTestBeep    -> playTestBeep()
             is CommandHandleTimeChange -> runBlocking { resumeOrHandleTimeChange() }
             is CommandUpdateAlertConfiguration -> updateAlertConfiguration()
@@ -1206,8 +1216,8 @@ class O5PumpPlugin @Inject constructor(
             }
         } ?: pumpEnactResultProvider.get().success(false).enacted(false).comment(rh.gs(R.string.omnipod_5_error_no_active_alerts))
 
-    private fun suspendDelivery(): PumpEnactResult =
-        try {
+    private suspend fun suspendDelivery(): PumpEnactResult {
+        val result = try {
             val cmd = SuspendDeliveryCommand.Builder()
                 .setUniqueId(requirePodId())
                 .setSequenceNumber(podStateManager.msgSequenceNumber.toShort())
@@ -1223,6 +1233,12 @@ class O5PumpPlugin @Inject constructor(
             aapsLogger.error(LTag.PUMP, "Error suspending O5 delivery", e)
             pumpEnactResultProvider.get().success(false).enacted(false)
         }
+        // Tell AAPS right away rather than waiting for the next status poll. Outside the try so
+        // that a problem recording the zero basal cannot report a good suspend as a failure -
+        // and it runs after a failed suspend too, where the pod may be suspended anyway.
+        syncStoppedDelivery()
+        return result
+    }
 
     private fun playTestBeep(): PumpEnactResult =
         try {

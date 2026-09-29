@@ -285,6 +285,12 @@ class O5PumpPluginTest : TestBaseWithProfile() {
     fun `executeCustomCommand suspends delivery for CommandSuspendDelivery`() {
         whenever(podStateManager.podId).thenReturn(12345L)
         whenever(bleManager.sendCommand(any(), any())).thenReturn(Observable.empty())
+        // Suspending now also records a zero temporary basal, which reads the expected state.
+        runBlocking {
+            whenever(pumpSync.expectedPumpState()).thenReturn(
+                PumpSync.PumpState(temporaryBasal = null, extendedBolus = null, bolus = null, profile = null, serialNumber = "")
+            )
+        }
 
         val result = plugin.executeCustomCommand(CommandSuspendDelivery())
 
@@ -958,6 +964,24 @@ class O5PumpPluginTest : TestBaseWithProfile() {
 
             verify(pumpSync, never()).syncTemporaryBasalWithPumpId(
                 any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncStoppedDelivery records a zero temporary basal while delivery is suspended`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.isPodKaput).thenReturn(false)
+        whenever(podStateManager.deliverySuspended).thenReturn(true)
+
+        runBlocking {
+            whenever(pumpSync.expectedPumpState()).thenReturn(noRunningTempBasal())
+
+            plugin.syncStoppedDelivery()
+
+            verify(pumpSync).syncTemporaryBasalWithPumpId(
+                any(), argThat { cU == 0.0 }, any(), eq(true),
+                eq(PumpSync.TemporaryBasalType.PUMP_SUSPEND), any(), eq(PumpType.OMNIPOD_5), any()
             )
         }
     }
