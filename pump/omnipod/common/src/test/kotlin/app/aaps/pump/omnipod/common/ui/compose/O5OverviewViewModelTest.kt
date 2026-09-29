@@ -3,6 +3,7 @@ package app.aaps.pump.omnipod.common.ui.compose
 import android.content.Context
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.insulin.ConcentrationHelper
+import app.aaps.core.interfaces.pump.PumpInsulin
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import app.aaps.core.ui.R as CoreUiR
 import app.aaps.pump.omnipod.common.R as CommonR
@@ -159,5 +161,32 @@ internal class O5OverviewViewModelTest {
         assertThat(resume.visible).isTrue()
         val suspend = state.primaryActions.first { it.label == "Suspend" }
         assertThat(suspend.visible).isFalse()
+    }
+
+    @Test
+    fun above50Reservoir_showsOver50RatherThanAnExactAmount() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.reservoirPulsesRemaining).thenReturn(null)
+        whenever(rh.gs(CoreUiR.string.reservoir_label)).thenReturn("Reservoir")
+        whenever(rh.gs(eq(CoreUiR.string.overview_reservoir_concentration_value_over), eq("0 U"))).thenReturn(">50 U")
+
+        val row = createViewModel().uiState.value.infoRows.filterIsInstance<PumpInfoRow>().first { it.label == "Reservoir" }
+
+        assertThat(row.value).isEqualTo(">50 U")
+        assertThat(row.level).isEqualTo(StatusLevel.NORMAL)
+    }
+
+    @Test
+    fun measuredReservoir_showsMeasuredAmount() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.reservoirPulsesRemaining).thenReturn(250)
+        whenever(rh.gs(CoreUiR.string.reservoir_label)).thenReturn("Reservoir")
+        whenever(ch.insulinAmountString(any())).thenReturn("12.5 U")
+        whenever(ch.fromPump(any<PumpInsulin>(), eq(false))).thenReturn(12.5)
+
+        val row = createViewModel().uiState.value.infoRows.filterIsInstance<PumpInfoRow>().first { it.label == "Reservoir" }
+
+        assertThat(row.value).isEqualTo("12.5 U")
+        assertThat(row.level).isEqualTo(StatusLevel.CRITICAL)
     }
 }

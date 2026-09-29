@@ -8,6 +8,7 @@ import app.aaps.pump.omnipod.common.bledriver.pod.definition.AlarmType
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.AlertType
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.BasalProgram
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.DeliveryStatus
+import app.aaps.pump.omnipod.common.bledriver.pod.definition.PodConstants
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.PodStatus
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.SoftwareVersion
 import app.aaps.pump.omnipod.common.bledriver.pod.response.AlarmStatusResponse
@@ -466,7 +467,9 @@ class InMemoryO5PodStateManager : O5PodStateManager {
         podStatus = response.podStatus
         deliveryStatus = response.deliveryStatus
         bolusPulsesRemaining = response.bolusPulsesRemaining
-        reservoirPulsesRemaining = response.reservoirPulsesRemaining
+        if (response.reservoirPulsesRemaining < PodConstants.RESERVOIR_PULSES_UNKNOWN) {
+            reservoirPulsesRemaining = response.reservoirPulsesRemaining
+        }
         activeAlerts = response.activeAlerts
         minutesSinceActivation = response.minutesSinceActivation
         sequenceNumberOfLastProgrammingCommand = response.sequenceNumberOfLastProgrammingCommand
@@ -478,7 +481,9 @@ class InMemoryO5PodStateManager : O5PodStateManager {
         deliveryStatus = response.deliveryStatus
         totalPulsesDelivered = response.totalPulsesDelivered
         bolusPulsesRemaining = response.bolusPulsesRemaining
-        reservoirPulsesRemaining = response.reservoirPulsesRemaining
+        if (response.reservoirPulsesRemaining < PodConstants.RESERVOIR_PULSES_UNKNOWN) {
+            reservoirPulsesRemaining = response.reservoirPulsesRemaining
+        }
         activeAlerts = response.activeAlerts
         minutesSinceActivation = response.minutesSinceActivation
         sequenceNumberOfLastProgrammingCommand = response.sequenceNumberOfLastProgrammingCommand
