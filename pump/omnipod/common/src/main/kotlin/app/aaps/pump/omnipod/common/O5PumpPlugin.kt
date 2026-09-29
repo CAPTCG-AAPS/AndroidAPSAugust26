@@ -323,7 +323,10 @@ class O5PumpPlugin @Inject constructor(
     override suspend fun getPumpStatus(reason: String) {
         aapsLogger.debug(LTag.PUMP, "O5 getPumpStatus reason=$reason")
         if (podStateManager.ltk == null) {
-            return // not paired yet, nothing to read
+            // Not paired yet - nothing to read, but AAPS still needs to be told that no
+            // insulin is being delivered.
+            syncStoppedDelivery()
+            return
         }
         try {
             fetchStatus().blockingAwait()
@@ -337,7 +340,45 @@ class O5PumpPlugin @Inject constructor(
         } catch (e: Exception) {
             aapsLogger.error(LTag.PUMP, "Error in O5 getPumpStatus", e)
         }
+        // Outside the try on purpose: a pod that is gone is exactly the case where the read
+        // above fails, and also the case where this matters most.
+        syncStoppedDelivery()
         syncPumpFlows()
+    }
+
+    /**
+     * Records a zero-rate temporary basal while the pod is not delivering, so AAPS stops
+     * counting the basal program as insulin that actually went in.
+     *
+     * Without this, a faulted, deactivated or not-yet-activated pod leaves AAPS believing the
+     * basal program is still running. Insulin on board then includes insulin the pod never
+     * delivered, and the loop corrects less than it should. Mirrors what the Dash driver does
+     * in `OmnipodDashPumpPlugin.checkPodKaput` and `createFakeTBRWhenNoActivePod`.
+     *
+     * The zero basal is written for a whole pod lifetime, and re-checked on every status poll:
+     * if a zero temporary basal is already running, nothing is written, so repeated polls do
+     * not pile up records. Starting a new pod replaces it with that pod's real basal.
+     *
+     * Internal (rather than private) to allow unit testing within this module.
+     */
+    internal suspend fun syncStoppedDelivery() {
+        val delivering = podStateManager.activationProgress == ActivationProgress.COMPLETED &&
+            !podStateManager.isPodKaput
+        if (delivering) return
+        val runningTempBasal = pumpSync.expectedPumpState().temporaryBasal
+        if (runningTempBasal != null && runningTempBasal.rate == 0.0) return
+        aapsLogger.info(LTag.PUMP, "O5 pod is not delivering - recording a zero temporary basal")
+        pumpSync.syncTemporaryBasalWithPumpId(
+            timestamp = System.currentTimeMillis(),
+            rate = PumpRate(0.0),
+            duration = T.mins(PodConstants.MAX_POD_LIFETIME.toMinutes()).msecs(),
+            isAbsolute = true,
+            type = PumpSync.TemporaryBasalType.PUMP_SUSPEND,
+            // Not read back anywhere - it only has to be unique.
+            pumpId = System.currentTimeMillis(),
+            pumpType = PumpType.OMNIPOD_5,
+            pumpSerial = serialNumber()
+        )
     }
 
     /**

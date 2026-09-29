@@ -3,6 +3,7 @@ package app.aaps.pump.omnipod.common
 import app.aaps.core.data.pump.defs.ManufacturerType
 import app.aaps.core.data.model.BS
 import app.aaps.core.data.pump.defs.PumpType
+import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.protection.ProtectionCheck
 import app.aaps.core.interfaces.pump.BlePreCheck
 import app.aaps.core.interfaces.pump.BolusProgressData
@@ -885,5 +886,92 @@ class O5PumpPluginTest : TestBaseWithProfile() {
 
         // Only the temp basal command itself, no resolution round trip.
         verify(bleManager, times(1)).sendCommand(any(), any())
+    }
+
+    // -- zero temporary basal while the pod is not delivering ---------------------------------
+    // Mirrors what the Dash driver does in checkPodKaput()/createFakeTBRWhenNoActivePod(): tell
+    // AAPS that no insulin is going in, so the basal program is not counted as delivered.
+
+    private fun noRunningTempBasal() = PumpSync.PumpState(
+        temporaryBasal = null, extendedBolus = null, bolus = null, profile = null, serialNumber = ""
+    )
+
+    private fun zeroTempBasalAlreadyRunning() = PumpSync.PumpState(
+        temporaryBasal = PumpSync.PumpState.TemporaryBasal(
+            timestamp = System.currentTimeMillis(),
+            duration = T.hours(80).msecs(),
+            rate = 0.0,
+            isAbsolute = true,
+            type = PumpSync.TemporaryBasalType.PUMP_SUSPEND,
+            id = 1L,
+            pumpId = 1L
+        ),
+        extendedBolus = null, bolus = null, profile = null, serialNumber = ""
+    )
+
+    @Test
+    fun `syncStoppedDelivery records a zero temporary basal when no pod is activated`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.NOT_STARTED)
+
+        runBlocking {
+            whenever(pumpSync.expectedPumpState()).thenReturn(noRunningTempBasal())
+
+            plugin.syncStoppedDelivery()
+
+            verify(pumpSync).syncTemporaryBasalWithPumpId(
+                any(), argThat { cU == 0.0 }, any(), eq(true),
+                eq(PumpSync.TemporaryBasalType.PUMP_SUSPEND), any(), eq(PumpType.OMNIPOD_5), any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncStoppedDelivery records a zero temporary basal when the pod has faulted`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        // isPodKaput is a default interface getter, so a mock bypasses the derivation from
+        // podStatus - stub the result itself (same reason as in PersistedO5PodStateManagerTest).
+        whenever(podStateManager.isPodKaput).thenReturn(true)
+
+        runBlocking {
+            whenever(pumpSync.expectedPumpState()).thenReturn(noRunningTempBasal())
+
+            plugin.syncStoppedDelivery()
+
+            verify(pumpSync).syncTemporaryBasalWithPumpId(
+                any(), argThat { cU == 0.0 }, any(), eq(true),
+                eq(PumpSync.TemporaryBasalType.PUMP_SUSPEND), any(), eq(PumpType.OMNIPOD_5), any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncStoppedDelivery leaves a running pod alone`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.isPodKaput).thenReturn(false)
+
+        runBlocking {
+            whenever(pumpSync.expectedPumpState()).thenReturn(noRunningTempBasal())
+
+            plugin.syncStoppedDelivery()
+
+            verify(pumpSync, never()).syncTemporaryBasalWithPumpId(
+                any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncStoppedDelivery does not write again while a zero temporary basal is already running`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.NOT_STARTED)
+
+        runBlocking {
+            whenever(pumpSync.expectedPumpState()).thenReturn(zeroTempBasalAlreadyRunning())
+
+            plugin.syncStoppedDelivery()
+
+            verify(pumpSync, never()).syncTemporaryBasalWithPumpId(
+                any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
     }
 }
