@@ -303,8 +303,30 @@ class PersistedO5PodStateManagerTest : TestBase() {
         assertThat(reader.podStatus).isEqualTo(response.podStatus)
         assertThat(reader.deliveryStatus).isEqualTo(response.deliveryStatus)
         assertThat(reader.totalPulsesDelivered).isEqualTo(response.totalPulsesDelivered)
-        assertThat(reader.reservoirPulsesRemaining).isEqualTo(response.reservoirPulsesRemaining)
+        assertThat(response.reservoirPulsesRemaining).isEqualTo(1023.toShort())
+        assertThat(reader.reservoirPulsesRemaining).isNull()
         assertThat(reader.minutesSinceActivation).isEqualTo(response.minutesSinceActivation)
+    }
+
+    @Test
+    fun `reservoir retains a measured value when a later status reports above 50`() {
+        val writer = newManager()
+        writer.updateFromDefaultStatusResponse(DefaultStatusResponse(hexToBytes("1D1800A02800000463E8")))
+        writer.updateFromDefaultStatusResponse(DefaultStatusResponse(hexToBytes("1D1800A02800000463FF")))
+        writer.updateFromAlarmStatusResponse(AlarmStatusResponse(hexToBytes("021602080100000501BD00000003FF01950000000000670A")))
+
+        assertThat(newManager().reservoirPulsesRemaining).isEqualTo(1000.toShort())
+    }
+
+    @Test
+    fun `old saved above 50 reservoir reading is not treated as a measured value`() {
+        val writer = newManager()
+        writer.updateFromDefaultStatusResponse(DefaultStatusResponse(hexToBytes("1D1800A02800000463E8")))
+        backingStore = requireNotNull(backingStore).replace(
+            "\"reservoirPulsesRemaining\":1000", "\"reservoirPulsesRemaining\":1023"
+        )
+
+        assertThat(newManager().reservoirPulsesRemaining).isNull()
     }
 
     // isPodKaput is what O5PumpPlugin.checkPodFault() triggers on, and it is derived from

@@ -18,5 +18,10 @@ class PodConstants {
 
         // Reservoir units alert threshold
         const val DEFAULT_MAX_RESERVOIR_ALERT_THRESHOLD: Short = 20
+
+        // The pod sends this pulse count while it still holds more than 50 units. It means
+        // "not measured", not a real reading: the pod only reports a number once the
+        // reservoir drops below 50 units. Storing it would show a fixed 51.15 U instead.
+        const val RESERVOIR_PULSES_UNKNOWN: Short = 1023
     }
 }

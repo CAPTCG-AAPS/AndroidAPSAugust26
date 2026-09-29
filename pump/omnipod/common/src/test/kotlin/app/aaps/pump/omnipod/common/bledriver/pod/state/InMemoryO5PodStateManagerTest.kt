@@ -2,6 +2,8 @@ package app.aaps.pump.omnipod.common.bledriver.pod.state
 
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.AlarmType
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.AlertType
+import app.aaps.pump.omnipod.common.bledriver.pod.response.AlarmStatusResponse
+import app.aaps.pump.omnipod.common.bledriver.pod.response.DefaultStatusResponse
 import app.aaps.pump.omnipod.common.bledriver.pod.response.PodInfoActivationTimeResponse
 import app.aaps.pump.omnipod.common.bledriver.pod.response.PodInfoTriggeredAlertsResponse
 import com.google.common.truth.Truth.assertThat
@@ -15,6 +17,28 @@ import java.util.Calendar
  * `fetchActivationTimeIfNeeded`/`fetchTriggeredAlertsIfNeeded`).
  */
 class InMemoryO5PodStateManagerTest {
+
+    @Test
+    fun `above 50 reservoir response does not replace a measured value`() {
+        val measured = DefaultStatusResponse(hexToBytes("1D1800A02800000463E8"))
+        val above50 = DefaultStatusResponse(hexToBytes("1D1800A02800000463FF"))
+        val state = InMemoryO5PodStateManager()
+
+        state.updateFromDefaultStatusResponse(above50)
+        assertThat(state.reservoirPulsesRemaining).isNull()
+
+        state.updateFromDefaultStatusResponse(measured)
+        assertThat(state.reservoirPulsesRemaining).isEqualTo(1000.toShort())
+
+        state.updateFromDefaultStatusResponse(above50)
+        assertThat(state.reservoirPulsesRemaining).isEqualTo(1000.toShort())
+
+        state.updateFromAlarmStatusResponse(AlarmStatusResponse(hexToBytes("021602080100000501BD00000003FF01950000000000670A")))
+        assertThat(state.reservoirPulsesRemaining).isEqualTo(1000.toShort())
+    }
+
+    private fun hexToBytes(hex: String): ByteArray =
+        ByteArray(hex.length / 2) { i -> hex.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
 
     @Test
     fun `updateFromActivationTimeResponse sets podActivatedAt and reuses alarmType-alarmTime`() {
