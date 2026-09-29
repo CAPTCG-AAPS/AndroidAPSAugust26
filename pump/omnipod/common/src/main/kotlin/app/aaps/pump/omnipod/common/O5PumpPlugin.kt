@@ -1,5 +1,6 @@
 package app.aaps.pump.omnipod.common
 
+import androidx.annotation.VisibleForTesting
 import app.aaps.core.data.model.BS
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.data.pump.defs.ManufacturerType
@@ -96,6 +97,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.rx3.rxCompletable
 import org.json.JSONObject
 import java.util.Date
+import java.util.TimeZone
 import java.util.concurrent.CountDownLatch
 import javax.inject.Inject
 import javax.inject.Provider
@@ -167,6 +169,15 @@ class O5PumpPlugin @Inject constructor(
 
     private var statusChecker: Runnable
 
+    /** Wall-clock time the standing pod warnings may next be re-checked. See [updatePodWarnings]. */
+    private var nextPodWarningCheck = 0L
+
+    /** Lets a test ask for the next [updatePodWarnings] call to run rather than waiting 15 minutes. */
+    @get:VisibleForTesting
+    internal var nextPodWarningCheckForTest: Long
+        get() = nextPodWarningCheck
+        set(value) { nextPodWarningCheck = value }
+
     companion object {
 
         private const val BOLUS_RETRY_INTERVAL_MS = 2000L
@@ -179,6 +190,9 @@ class O5PumpPlugin @Inject constructor(
         /** Matches Dash's fixed pulse-delay constant for bolus delivery pacing - a
          *  pod-firmware-level property of the shared command layer. */
         private const val BOLUS_DELAY_BETWEEN_PULSES_EIGHTH_SECONDS: Byte = 16
+
+        /** How often the standing pod warnings are re-checked - same spacing the Dash driver uses. */
+        private const val POD_WARNING_INTERVAL_MS = 15 * 60 * 1000L
 
         private val pumpDescription = PumpDescription().fillFor(PumpType.OMNIPOD_5)
     }
@@ -258,7 +272,17 @@ class O5PumpPlugin @Inject constructor(
 
     // -- connection lifecycle -------------------------------------------------------------
 
-    override fun isInitialized(): Boolean = podStateManager.activationProgress == ActivationProgress.COMPLETED
+    /**
+     * True while there is a pod AAPS can dose with.
+     *
+     * Activation progress alone is not enough: it only ever moves forward, and is cleared when a
+     * new pod is paired, so a faulted, deactivated or expired pod kept reporting the pump as
+     * ready. The Dash driver answers this from the pod status (`isPodRunning`) for the same
+     * reason. Pod status is not used directly here because it is null until the first status poll
+     * of an app run, which would report a perfectly good pod as uninitialised after every restart.
+     */
+    override fun isInitialized(): Boolean =
+        podStateManager.activationProgress == ActivationProgress.COMPLETED && !podStateManager.isPodKaput
     override fun isSuspended(): Boolean = podStateManager.deliverySuspended
 
     // isBusy() gates the ENTIRE command queue, including custom commands like
@@ -326,6 +350,7 @@ class O5PumpPlugin @Inject constructor(
             // Not paired yet - nothing to read, but AAPS still needs to be told that no
             // insulin is being delivered.
             syncStoppedDelivery()
+            updatePodWarnings()
             return
         }
         try {
@@ -343,7 +368,49 @@ class O5PumpPlugin @Inject constructor(
         // Outside the try on purpose: a pod that is gone is exactly the case where the read
         // above fails, and also the case where this matters most.
         syncStoppedDelivery()
+        updatePodWarnings()
         syncPumpFlows()
+    }
+
+    /**
+     * Posts the standing pod warnings: no pod to dose with, delivery suspended, and the pod
+     * running against a different time zone than the phone. Each one is dismissed again as soon
+     * as it no longer applies. Mirrors `OmnipodDashPumpPlugin.updatePodWarnings()`.
+     *
+     * Dash runs this from a tick that never stops. O5's tick stops as soon as there is nothing
+     * left to reconcile, on purpose, so this rides on the status poll instead - the warnings
+     * follow the loop's polling rather than a clock of their own. Re-checked at most every
+     * [POD_WARNING_INTERVAL_MS], the same spacing Dash uses.
+     *
+     * Internal (rather than private) to allow unit testing within this module.
+     */
+    internal fun updatePodWarnings() {
+        if (System.currentTimeMillis() < nextPodWarningCheck) return
+        nextPodWarningCheck = System.currentTimeMillis() + POD_WARNING_INTERVAL_MS
+
+        if (!isInitialized()) {
+            notificationManager.post(NotificationId.OMNIPOD_POD_NOT_ATTACHED, rh.gs(R.string.omnipod_common_pod_status_no_active_pod))
+            // The pod-level warnings below say nothing useful without a pod.
+            notificationManager.dismiss(NotificationId.OMNIPOD_POD_SUSPENDED)
+            notificationManager.dismiss(NotificationId.OMNIPOD_TIME_OUT_OF_SYNC)
+            return
+        }
+        notificationManager.dismiss(NotificationId.OMNIPOD_POD_NOT_ATTACHED)
+
+        if (podStateManager.deliverySuspended) {
+            notificationManager.post(NotificationId.OMNIPOD_POD_SUSPENDED, rh.gs(R.string.omnipod_common_alert_delivery_suspended))
+        } else {
+            notificationManager.dismiss(NotificationId.OMNIPOD_POD_SUSPENDED)
+        }
+
+        // Checked even while suspended: a suspended pod can be in the wrong time zone too, and
+        // the wrong basal rate would start running the moment delivery resumes. Dash only checks
+        // this while delivery is running, and never takes the warning down again.
+        if (!podStateManager.sameTimeZone) {
+            notificationManager.post(NotificationId.OMNIPOD_TIME_OUT_OF_SYNC, rh.gs(R.string.omnipod_common_error_time_out_of_sync))
+        } else {
+            notificationManager.dismiss(NotificationId.OMNIPOD_TIME_OUT_OF_SYNC)
+        }
     }
 
     /**
@@ -746,6 +813,9 @@ class O5PumpPlugin @Inject constructor(
                 .build()
             bleManager.sendCommand(cmd, DefaultStatusResponse::class).ignoreElements().blockingAwait()
             podStateManager.basalProgram = basalProgram
+            // The pod runs this program against the clock it was just given, so remember which
+            // time zone that was - see O5PodStateManager.sameTimeZone.
+            podStateManager.timeZoneOffset = TimeZone.getDefault().getOffset(System.currentTimeMillis())
             podStateManager.deliverySuspended = false
             podStateManager.pendingDoseCommand = null
             notificationManager.post(NotificationId.PROFILE_SET_OK, app.aaps.core.ui.R.string.profile_set_ok)

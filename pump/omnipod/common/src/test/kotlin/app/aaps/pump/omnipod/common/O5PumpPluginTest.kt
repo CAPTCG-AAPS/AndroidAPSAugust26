@@ -93,6 +93,9 @@ class O5PumpPluginTest : TestBaseWithProfile() {
         whenever(rh.gs(R.string.omnipod_5_error_no_active_profile)).thenReturn("No active profile")
         whenever(rh.gs(R.string.omnipod_5_error_no_active_alerts)).thenReturn("No active alerts")
         whenever(rh.gs(R.string.omnipod_5_error_unresolved_dose_pending)).thenReturn("Earlier dose unconfirmed")
+        whenever(rh.gs(R.string.omnipod_common_pod_status_no_active_pod)).thenReturn("No Active Pod")
+        whenever(rh.gs(R.string.omnipod_common_alert_delivery_suspended)).thenReturn("Insulin delivery is suspended")
+        whenever(rh.gs(R.string.omnipod_common_error_time_out_of_sync)).thenReturn("Pod time out of sync")
     }
 
     // -- isBusy / isConnected / isInitialized (the exact bug class already hit once) -------
@@ -896,6 +899,87 @@ class O5PumpPluginTest : TestBaseWithProfile() {
 
         // Only the temp basal command itself, no resolution round trip.
         verify(bleManager, times(1)).sendCommand(any(), any())
+    }
+
+    // -- pump readiness and standing warnings ---------------------------------------------------
+
+    @Test
+    fun `isInitialized goes false once the pod has stopped for good`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.isPodKaput).thenReturn(true)
+
+        assertThat(plugin.isInitialized()).isFalse()
+    }
+
+    @Test
+    fun `isInitialized stays true for a running pod`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.isPodKaput).thenReturn(false)
+
+        assertThat(plugin.isInitialized()).isTrue()
+    }
+
+    @Test
+    fun `updatePodWarnings reports that there is no pod to dose with`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.NOT_STARTED)
+
+        plugin.updatePodWarnings()
+
+        verify(notificationManager).post(
+            eq(NotificationId.OMNIPOD_POD_NOT_ATTACHED), any<String>(), level = any(), validMinutes = any(),
+            soundRes = anyOrNull(), actions = any(), validityCheck = anyOrNull()
+        )
+        verify(notificationManager).dismiss(NotificationId.OMNIPOD_POD_SUSPENDED)
+    }
+
+    @Test
+    fun `updatePodWarnings reports suspended delivery and takes it back once delivery resumes`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.isPodKaput).thenReturn(false)
+        whenever(podStateManager.sameTimeZone).thenReturn(true)
+        whenever(podStateManager.deliverySuspended).thenReturn(true)
+
+        plugin.updatePodWarnings()
+        verify(notificationManager).post(
+            eq(NotificationId.OMNIPOD_POD_SUSPENDED), any<String>(), level = any(), validMinutes = any(),
+            soundRes = anyOrNull(), actions = any(), validityCheck = anyOrNull()
+        )
+
+        whenever(podStateManager.deliverySuspended).thenReturn(false)
+        plugin.nextPodWarningCheckForTest = 0L
+        plugin.updatePodWarnings()
+
+        verify(notificationManager).dismiss(NotificationId.OMNIPOD_POD_SUSPENDED)
+    }
+
+    @Test
+    fun `updatePodWarnings reports a pod left in another time zone`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.isPodKaput).thenReturn(false)
+        whenever(podStateManager.deliverySuspended).thenReturn(false)
+        // sameTimeZone is a default interface getter, so a mock answers false unless stubbed -
+        // which is the case under test here anyway.
+        whenever(podStateManager.sameTimeZone).thenReturn(false)
+
+        plugin.updatePodWarnings()
+
+        verify(notificationManager).post(
+            eq(NotificationId.OMNIPOD_TIME_OUT_OF_SYNC), any<String>(), level = any(), validMinutes = any(),
+            soundRes = anyOrNull(), actions = any(), validityCheck = anyOrNull()
+        )
+    }
+
+    @Test
+    fun `updatePodWarnings does not re-check before its interval has passed`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.NOT_STARTED)
+
+        plugin.updatePodWarnings()
+        plugin.updatePodWarnings()
+
+        verify(notificationManager, times(1)).post(
+            eq(NotificationId.OMNIPOD_POD_NOT_ATTACHED), any<String>(), level = any(), validMinutes = any(),
+            soundRes = anyOrNull(), actions = any(), validityCheck = anyOrNull()
+        )
     }
 
     // -- bolus cancel ---------------------------------------------------------------------------

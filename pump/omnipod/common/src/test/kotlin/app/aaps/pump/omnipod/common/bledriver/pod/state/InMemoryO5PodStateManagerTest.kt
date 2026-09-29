@@ -9,6 +9,7 @@ import app.aaps.pump.omnipod.common.bledriver.pod.response.PodInfoTriggeredAlert
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 import java.util.Calendar
+import java.util.TimeZone
 
 /**
  * [O5PodStateManager.updateFromActivationTimeResponse]/[O5PodStateManager
@@ -35,6 +36,23 @@ class InMemoryO5PodStateManagerTest {
 
         state.updateFromAlarmStatusResponse(AlarmStatusResponse(hexToBytes("021602080100000501BD00000003FF01950000000000670A")))
         assertThat(state.reservoirPulsesRemaining).isEqualTo(1000.toShort())
+    }
+
+    @Test
+    fun `sameTimeZone is true until a basal program has been written`() {
+        assertThat(InMemoryO5PodStateManager().sameTimeZone).isTrue()
+    }
+
+    @Test
+    fun `sameTimeZone follows the offset recorded when the program was written`() {
+        val state = InMemoryO5PodStateManager()
+        val here = TimeZone.getDefault().getOffset(System.currentTimeMillis())
+
+        state.timeZoneOffset = here
+        assertThat(state.sameTimeZone).isTrue()
+
+        state.timeZoneOffset = here + 3_600_000
+        assertThat(state.sameTimeZone).isFalse()
     }
 
     private fun hexToBytes(hex: String): ByteArray =

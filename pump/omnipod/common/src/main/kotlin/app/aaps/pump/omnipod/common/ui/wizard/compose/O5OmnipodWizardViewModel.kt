@@ -59,6 +59,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.rx3.rxSingle
 import java.util.Date
+import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Provider
 import app.aaps.pump.omnipod.common.R as CommonR
@@ -313,6 +314,9 @@ class O5OmnipodWizardViewModel @Inject constructor(
                     .build()
                 bleManager.sendCommand(cmd, DefaultStatusResponse::class).ignoreElements().blockingAwait()
                 ensureActivationTimeNotExceeded()
+                // The pod runs this program against the clock it was just given, so remember
+                // which time zone that was - see O5PodStateManager.sameTimeZone.
+                podStateManager.timeZoneOffset = TimeZone.getDefault().getOffset(System.currentTimeMillis())
                 podStateManager.activationProgress = ActivationProgress.PROGRAMMED_BASAL
             }
 

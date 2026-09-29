@@ -21,6 +21,7 @@ import app.aaps.pump.omnipod.common.bledriver.comm.O5IdRotation
 import java.io.Serializable
 import java.util.Calendar
 import java.util.EnumSet
+import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -96,6 +97,27 @@ interface O5PodStateManager {
 
     /** The basal program currently believed to be running on the pod. */
     var basalProgram: BasalProgram?
+
+    /**
+     * The phone's UTC offset in milliseconds at the moment the basal program was last written to
+     * the pod, or null if no program has been written yet.
+     *
+     * The pod has no time zone of its own: it runs the basal program against the clock it was
+     * given when the program was written. Move to another time zone and the pod keeps delivering
+     * on the old one, so the wrong basal rate runs until a new program is written. Mirrors
+     * `OmnipodDashPodStateManager.timeZoneOffset`.
+     */
+    var timeZoneOffset: Int?
+
+    /**
+     * True while the phone is still in the time zone the pod was programmed in, and while no
+     * program has been written yet (nothing to warn about).
+     *
+     * Note this is a default getter, so a mock of this interface bypasses it and always answers
+     * false - stub the result itself in tests, the same as [isPodKaput].
+     */
+    val sameTimeZone: Boolean
+        get() = timeZoneOffset?.let { it == TimeZone.getDefault().getOffset(System.currentTimeMillis()) } != false
 
     /** True while the pod's delivery is suspended (no basal/temp basal delivery). */
     var deliverySuspended: Boolean
@@ -369,6 +391,7 @@ class InMemoryO5PodStateManager : O5PodStateManager {
     @Volatile override var podLifeInHours: Short? = null
 
     @Volatile override var basalProgram: BasalProgram? = null
+    @Volatile override var timeZoneOffset: Int? = null
     @Volatile override var deliverySuspended: Boolean = false
     @Volatile override var lastBolusStartTime: Long? = null
     @Volatile override var lastBolusRequestedUnits: Double? = null
@@ -555,6 +578,7 @@ class InMemoryO5PodStateManager : O5PodStateManager {
         secondPrimeBolusVolume = null
         podLifeInHours = null
         basalProgram = null
+        timeZoneOffset = null
         deliverySuspended = false
         lastBolusStartTime = null
         lastBolusRequestedUnits = null
