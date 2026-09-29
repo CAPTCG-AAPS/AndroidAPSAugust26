@@ -696,9 +696,16 @@ class O5PumpPlugin @Inject constructor(
     // -- basal profile ----------------------------------------------------------------------
 
     override suspend fun setNewBasalProfile(profile: PumpProfile): PumpEnactResult {
-        if (podStateManager.ltk == null) {
-            // nothing paired yet - same "prevent setBasal requests" guard Dash uses
-            return pumpEnactResultProvider.get().success(true).enacted(true)
+        if (podStateManager.activationProgress != ActivationProgress.COMPLETED) {
+            // No pod to write to yet, so this is deferred rather than a real write. Report
+            // enacted=false: enacted=true would tell AAPS the pod is running this profile when
+            // nothing was sent, and would post PROFILE_SET_OK for a write that never happened.
+            // Same guard and same answer as OmnipodDashPumpPlugin.setNewBasalProfile().
+            //
+            // The test is activation progress, not ltk: between pairing (which sets the key) and
+            // the first activation step there is a window where a queued profile write would
+            // otherwise be sent into the middle of the activation session.
+            return pumpEnactResultProvider.get().success(true).enacted(false)
         }
         if (!pendingDoseResolved()) return unresolvedDoseResult()
         val basalProgram = mapProfileToBasalProgram(profile, PumpType.OMNIPOD_5)

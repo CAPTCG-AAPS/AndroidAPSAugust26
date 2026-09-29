@@ -8,6 +8,7 @@ import app.aaps.core.interfaces.protection.ProtectionCheck
 import app.aaps.core.interfaces.pump.BlePreCheck
 import app.aaps.core.interfaces.pump.BolusProgressData
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
+import app.aaps.core.interfaces.pump.PumpProfile
 import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.PumpInsulin
 import app.aaps.core.interfaces.notifications.NotificationId
@@ -892,6 +893,23 @@ class O5PumpPluginTest : TestBaseWithProfile() {
 
         // Only the temp basal command itself, no resolution round trip.
         verify(bleManager, times(1)).sendCommand(any(), any())
+    }
+
+    // -- basal profile writes -----------------------------------------------------------------
+
+    @Test
+    fun `setNewBasalProfile before a pod is activated is deferred, not reported as written`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.NOT_STARTED)
+
+        // The guard returns before the profile is read, so a bare mock is enough here
+        // (core:objects, which holds the real profile types, is not on this test classpath).
+        val result = runBlocking { plugin.setNewBasalProfile(mock<PumpProfile>()) }
+
+        assertThat(result.success).isTrue()
+        // enacted=true here would tell AAPS the pod is running this profile, and post
+        // PROFILE_SET_OK, for a write that never left the phone.
+        assertThat(result.enacted).isFalse()
+        verify(bleManager, never()).sendCommand(any(), any())
     }
 
     // -- zero temporary basal while the pod is not delivering ---------------------------------
