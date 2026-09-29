@@ -896,13 +896,15 @@ class O5PumpPluginTest : TestBaseWithProfile() {
         temporaryBasal = null, extendedBolus = null, bolus = null, profile = null, serialNumber = ""
     )
 
-    private fun zeroTempBasalAlreadyRunning() = PumpSync.PumpState(
+    private fun zeroTempBasalAlreadyRunning(
+        type: PumpSync.TemporaryBasalType = PumpSync.TemporaryBasalType.PUMP_SUSPEND
+    ) = PumpSync.PumpState(
         temporaryBasal = PumpSync.PumpState.TemporaryBasal(
             timestamp = System.currentTimeMillis(),
             duration = T.hours(80).msecs(),
             rate = 0.0,
             isAbsolute = true,
-            type = PumpSync.TemporaryBasalType.PUMP_SUSPEND,
+            type = type,
             id = 1L,
             pumpId = 1L
         ),
@@ -956,6 +958,38 @@ class O5PumpPluginTest : TestBaseWithProfile() {
 
             verify(pumpSync, never()).syncTemporaryBasalWithPumpId(
                 any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncStoppedDelivery ends our own zero temporary basal once the pod delivers again`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.isPodKaput).thenReturn(false)
+
+        runBlocking {
+            whenever(pumpSync.expectedPumpState()).thenReturn(zeroTempBasalAlreadyRunning())
+
+            plugin.syncStoppedDelivery()
+
+            verify(pumpSync).syncStopTemporaryBasalWithPumpId(
+                any(), any(), eq(PumpType.OMNIPOD_5), any(), any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncStoppedDelivery leaves a zero temporary basal the loop asked for alone`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.COMPLETED)
+        whenever(podStateManager.isPodKaput).thenReturn(false)
+
+        runBlocking {
+            whenever(pumpSync.expectedPumpState()).thenReturn(zeroTempBasalAlreadyRunning(PumpSync.TemporaryBasalType.NORMAL))
+
+            plugin.syncStoppedDelivery()
+
+            verify(pumpSync, never()).syncStopTemporaryBasalWithPumpId(
+                any(), any(), any(), any(), any()
             )
         }
     }

@@ -364,8 +364,28 @@ class O5PumpPlugin @Inject constructor(
     internal suspend fun syncStoppedDelivery() {
         val delivering = podStateManager.activationProgress == ActivationProgress.COMPLETED &&
             !podStateManager.isPodKaput
-        if (delivering) return
         val runningTempBasal = pumpSync.expectedPumpState().temporaryBasal
+        if (delivering) {
+            // A pod is delivering again, so end our own zero basal if it somehow outlived the
+            // pod it was written for. Activating a pod normally ends it already (the wizard's
+            // pumpSync.connectNewPump() stops whatever is running), so this only catches a pod
+            // that started delivering by some other route. Only ever ends PUMP_SUSPEND records,
+            // which only this driver writes - a zero temporary basal asked for by the loop has
+            // a different type and must be left alone.
+            if (runningTempBasal != null &&
+                runningTempBasal.rate == 0.0 &&
+                runningTempBasal.type == PumpSync.TemporaryBasalType.PUMP_SUSPEND
+            ) {
+                aapsLogger.info(LTag.PUMP, "O5 pod is delivering again - ending the zero temporary basal")
+                pumpSync.syncStopTemporaryBasalWithPumpId(
+                    timestamp = System.currentTimeMillis(),
+                    endPumpId = System.currentTimeMillis(),
+                    pumpType = PumpType.OMNIPOD_5,
+                    pumpSerial = runningTempBasal.pumpSerial
+                )
+            }
+            return
+        }
         if (runningTempBasal != null && runningTempBasal.rate == 0.0) return
         aapsLogger.info(LTag.PUMP, "O5 pod is not delivering - recording a zero temporary basal")
         pumpSync.syncTemporaryBasalWithPumpId(
